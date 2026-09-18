@@ -586,4 +586,26 @@ window.openSellerDashboard=async function(){
  if(ids.length){const q=await db.from('ofoq_orders').select('id,status,payment_status,total_sar,created_at').in('id',ids).order('created_at',{ascending:false});orders=q.data||[]}
  document.getElementById('modal').innerHTML='<div class="fixed inset-0 z-50 bg-cream overflow-auto"><div class="max-w-5xl mx-auto p-4 md:p-8"><div class="flex justify-between items-center"><div><p class="text-gold font-bold">OFOQ SELLER</p><h2 class="text-3xl font-extrabold">'+esc(seller.store_name||'متجرك')+'</h2><p class="text-slate-500 mt-1">إدارة الطلبات وتجهيز منتجات متجرك</p></div><button onclick="document.getElementById(\'modal\').innerHTML=\'\';render()" class="bg-white px-4 py-3 rounded-2xl">إغلاق</button></div><div class="mt-6 bg-white rounded-3xl p-5"><h3 class="text-xl font-extrabold">طلبات متجرك</h3><div class="space-y-3 mt-4">'+((orders||[]).map(o=>'<article class="border rounded-2xl p-4"><div class="flex flex-wrap justify-between gap-2"><div><b>#'+o.id.slice(0,10).toUpperCase()+'</b><div class="text-xs text-slate-400 mt-1">'+new Date(o.created_at).toLocaleString('ar-SA')+'</div></div><span class="px-3 py-1 rounded-full bg-cream text-xs font-bold">'+(o.payment_status==='paid'?'مدفوع':'بانتظار الدفع')+'</span></div><div class="mt-3 text-sm">'+items.filter(i=>i.order_id===o.id).map(i=>esc(i.product_name)+' × '+i.quantity+' — '+money(Number(i.unit_price_sar)*Number(i.quantity))).join('<br>')+'</div><button onclick="sellerOrderFulfillment(\''+o.id+'\')" class="mt-4 w-full bg-navy text-white py-3 rounded-xl font-bold">إدارة التجهيز</button></article>').join('')||'<div class="py-10 text-center text-slate-400">لا توجد طلبات.</div>')+'</div></div></div></div>';
 };
+</script><script>
+/* OFOQ phase 13: transport readiness controls */
+async function prepareOfoqTransport(orderId){
+ const carrier=prompt('اسم شركة النقل');if(!carrier)return;
+ const tracking=prompt('رقم التتبع (اختياري)')||'';
+ const days=Number(prompt('المدة المتوقعة بالأيام','7')||7);
+ const cost=Number(prompt('تكلفة النقل بالريال السعودي','0')||0);
+ const notes=prompt('ملاحظات (اختياري)')||null;
+ const {error}=await db.rpc('ofoq_admin_mark_ready_for_transport',{p_order_id:orderId,p_carrier_name:carrier,p_tracking_code:tracking,p_estimated_days:days,p_shipping_cost_sar:cost,p_notes:notes});
+ if(error){toast(error.message);return}
+ toast('تم إنشاء/تحديث شحنة النقل');openAdminDashboard();
+}
+const OFOQ_oldAdminOrderDetailsTransport=adminOrderDetails;
+adminOrderDetails=async function(id){
+ await OFOQ_oldAdminOrderDetailsTransport(id);
+ const host=document.querySelector('#modal > div > div');
+ if(!host)return;
+ const box=document.createElement('div');box.className='mt-5 border border-slate-100 rounded-3xl p-4 bg-white';
+ box.innerHTML='<div class="flex justify-between items-center gap-3"><div><h3 class="font-extrabold">النقل والشحن</h3><p class="text-xs text-slate-400 mt-1">لا يمكن تجهيز الشحنة قبل جاهزية جميع البائعين.</p></div><button onclick="prepareOfoqTransport(\''+id+'\')" class="bg-navy text-white px-4 py-3 rounded-xl font-bold">🚚 تجهيز للنقل</button></div><div id="adminTransportFulfill" class="space-y-2 mt-4">جاري التحميل...</div>';
+ host.appendChild(box);
+ const html=await loadSellerFulfillments(id);const el=document.getElementById('adminTransportFulfill');if(el)el.innerHTML=html;
+};
 </script>
