@@ -541,4 +541,49 @@ validateCheckoutCoupon=async function(){
  if(totalRow){const b=totalRow.querySelector('b');if(b)b.textContent=money(total)}
  window.ofoqCheckoutCoupon={code,discount};
 };
+</script><script>
+/* OFOQ phase 12: multi-seller fulfillment UI */
+function fulfillmentLabel(s){return({pending:'بانتظار البائع',confirmed:'تم التأكيد',preparing:'جاري التجهيز',ready:'جاهز للشحن',cancelled:'ملغي'}[s]||s)}
+async function loadSellerFulfillments(orderId){
+ const {data,error}=await db.from('ofoq_order_seller_fulfillments').select('*,seller:ofoq_sellers(store_name)').eq('order_id',orderId).order('updated_at',{ascending:false});
+ if(error)return '<p class="text-red-500 text-sm">'+esc(error.message)+'</p>';
+ return (data||[]).map(f=>'<div class="flex items-center justify-between gap-3 p-3 rounded-2xl bg-slate-50"><div><b>'+esc(f.seller?.store_name||'البائع')+'</b><div class="text-xs text-slate-400 mt-1">آخر تحديث: '+new Date(f.updated_at).toLocaleString('ar-SA')+'</div></div><span class="px-3 py-1 rounded-full bg-white text-xs font-bold">'+fulfillmentLabel(f.status)+'</span></div>').join('')||'<p class="text-slate-400 text-sm">لا توجد بيانات تجهيز بعد.</p>';
+}
+async function sellerOrderFulfillment(orderId){
+ const {data,error}=await db.from('ofoq_order_seller_fulfillments').select('id,status,order_id,seller_id,seller:ofoq_sellers(store_name)').eq('order_id',orderId);
+ if(error||!data?.length){toast(error?.message||'لا توجد بيانات لهذا الطلب');return}
+ const mine=await db.auth.getUser();let mineSeller=null;
+ if(mine.data.user){const q=await db.from('ofoq_sellers').select('id,store_name').eq('user_id',mine.data.user.id).maybeSingle();mineSeller=q.data}
+ const f=data.find(x=>x.seller_id===mineSeller?.id);
+ if(!f){toast('هذا الطلب لا يحتوي منتجات من متجرك');return}
+ const can=f.status!=='ready';
+ document.getElementById('modal').innerHTML='<div class="fixed inset-0 z-[80] bg-black/50 flex items-center justify-center p-4"><div class="bg-white rounded-[30px] p-7 w-full max-w-lg"><div class="flex justify-between"><div><p class="text-gold text-sm font-bold">FULFILLMENT</p><h2 class="text-2xl font-extrabold">تجهيز طلب العميل</h2></div><button onclick="openSellerDashboard()">✕</button></div><div class="mt-5 bg-cream rounded-2xl p-4"><b>'+esc(f.seller?.store_name||'متجرك')+'</b><div class="text-sm text-slate-500 mt-1">الحالة الحالية: '+fulfillmentLabel(f.status)+'</div></div><div class="grid gap-3 mt-5">'+(f.status==='pending'?'<button onclick="updateSellerFulfillment(\''+orderId+'\',\'confirmed\')" class="bg-navy text-white py-4 rounded-2xl font-bold">✓ تأكيد الطلب</button>':'')+(f.status==='confirmed'?'<button onclick="updateSellerFulfillment(\''+orderId+'\',\'preparing\')" class="bg-navy text-white py-4 rounded-2xl font-bold">بدء التجهيز</button>':'')+(f.status==='preparing'?'<button onclick="updateSellerFulfillment(\''+orderId+'\',\'ready\')" class="bg-navy text-white py-4 rounded-2xl font-bold">📦 تم التجهيز — جاهز للشحن</button>':'')+(f.status==='ready'?'<div class="text-center p-4 rounded-2xl bg-emerald-50 text-emerald-700 font-bold">تم تجهيز منتجات متجرك لهذا الطلب.</div>':'')+'</div></div></div>';
+}
+async function updateSellerFulfillment(orderId,status){
+ const {error}=await db.rpc('ofoq_seller_update_fulfillment',{p_order_id:orderId,p_status:status});
+ if(error){toast(error.message);return}
+ toast('تم تحديث حالة تجهيز الطلب');sellerOrderFulfillment(orderId);
+}
+const OFOQ_oldCustomerOrderDetails2=customerOrderDetails;
+customerOrderDetails=async function(id){
+ await OFOQ_oldCustomerOrderDetails2(id);
+ const host=document.querySelector('#modal > div > div');
+ if(host){
+  const box=document.createElement('div');box.className='mt-5 bg-white border border-slate-100 rounded-3xl p-4';
+  box.innerHTML='<h3 class="font-extrabold mb-3">تجهيز البائعين</h3><div id="customerFulfillments" class="space-y-2">جاري التحميل...</div>';
+  host.appendChild(box);
+  const html=await loadSellerFulfillments(id);const el=document.getElementById('customerFulfillments');if(el)el.innerHTML=html;
+ }
+};
+const OFOQ_oldOpenSellerDashboard=window.openSellerDashboard;
+window.openSellerDashboard=async function(){
+ if(typeof OFOQ_oldOpenSellerDashboard==='function'){await OFOQ_oldOpenSellerDashboard();return}
+ const {data:{user}}=await db.auth.getUser();if(!user){openAuth();return}
+ const {data:seller}=await db.from('ofoq_sellers').select('id,store_name').eq('user_id',user.id).maybeSingle();
+ if(!seller){toast('لم يتم العثور على حساب البائع');return}
+ const {data:items}=await db.from('ofoq_order_items').select('order_id,product_name,quantity,unit_price_sar').eq('seller_id',seller.id).order('created_at',{ascending:false}).limit(100);
+ const ids=[...new Set((items||[]).map(x=>x.order_id))];let orders=[];
+ if(ids.length){const q=await db.from('ofoq_orders').select('id,status,payment_status,total_sar,created_at').in('id',ids).order('created_at',{ascending:false});orders=q.data||[]}
+ document.getElementById('modal').innerHTML='<div class="fixed inset-0 z-50 bg-cream overflow-auto"><div class="max-w-5xl mx-auto p-4 md:p-8"><div class="flex justify-between items-center"><div><p class="text-gold font-bold">OFOQ SELLER</p><h2 class="text-3xl font-extrabold">'+esc(seller.store_name||'متجرك')+'</h2><p class="text-slate-500 mt-1">إدارة الطلبات وتجهيز منتجات متجرك</p></div><button onclick="document.getElementById(\'modal\').innerHTML=\'\';render()" class="bg-white px-4 py-3 rounded-2xl">إغلاق</button></div><div class="mt-6 bg-white rounded-3xl p-5"><h3 class="text-xl font-extrabold">طلبات متجرك</h3><div class="space-y-3 mt-4">'+((orders||[]).map(o=>'<article class="border rounded-2xl p-4"><div class="flex flex-wrap justify-between gap-2"><div><b>#'+o.id.slice(0,10).toUpperCase()+'</b><div class="text-xs text-slate-400 mt-1">'+new Date(o.created_at).toLocaleString('ar-SA')+'</div></div><span class="px-3 py-1 rounded-full bg-cream text-xs font-bold">'+(o.payment_status==='paid'?'مدفوع':'بانتظار الدفع')+'</span></div><div class="mt-3 text-sm">'+items.filter(i=>i.order_id===o.id).map(i=>esc(i.product_name)+' × '+i.quantity+' — '+money(Number(i.unit_price_sar)*Number(i.quantity))).join('<br>')+'</div><button onclick="sellerOrderFulfillment(\''+o.id+'\')" class="mt-4 w-full bg-navy text-white py-3 rounded-xl font-bold">إدارة التجهيز</button></article>').join('')||'<div class="py-10 text-center text-slate-400">لا توجد طلبات.</div>')+'</div></div></div></div>';
+};
 </script>
