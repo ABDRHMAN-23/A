@@ -608,4 +608,30 @@ adminOrderDetails=async function(id){
  host.appendChild(box);
  const html=await loadSellerFulfillments(id);const el=document.getElementById('adminTransportFulfill');if(el)el.innerHTML=html;
 };
+</script><script>
+/* OFOQ phase 14: live transport tracking UI */
+const ofoqTransportSteps=[['ready_for_pickup','جاهز للاستلام'],['picked_up','تم الاستلام'],['in_transit','في الطريق إلى اليمن'],['arrived_aden','وصل إلى عدن'],['ready','جاهز للاستلام / التوصيل'],['delivered','تم التسليم']];
+function transportTimeline(s){
+ const idx=ofoqTransportSteps.findIndex(x=>x[0]===s);
+ return '<div class="relative space-y-3">'+ofoqTransportSteps.map((x,i)=>'<div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-extrabold '+(i<=idx?'bg-navy text-white':'bg-slate-100 text-slate-400')+'">'+(i<=idx?'✓':i+1)+'</div><span class="'+(i<=idx?'font-bold text-navy':'text-slate-400')+'">'+x[1]+'</span></div>').join('')+'</div>';
+}
+async function openTransportTracking(orderId){
+ const {data:order}=await db.from('ofoq_orders').select('id,status').eq('id',orderId).maybeSingle();
+ const {data:ship}=await db.from('ofoq_transport_shipments').select('*').eq('order_id',orderId).maybeSingle();
+ if(!ship){toast('لم تبدأ الشحنة بعد');return}
+ document.getElementById('modal').innerHTML='<div class="fixed inset-0 z-[80] bg-black/50 flex items-center justify-center p-4"><div class="bg-white rounded-[30px] p-7 w-full max-w-lg max-h-[90vh] overflow-auto"><div class="flex justify-between"><div><p class="text-gold font-bold text-sm">OFOQ TRACKING</p><h2 class="text-2xl font-extrabold">تتبع الشحنة</h2></div><button onclick="customerOrderDetails(\''+orderId+'\')">✕</button></div><div class="mt-5 p-4 rounded-2xl bg-cream"><div class="font-bold">'+esc(ship.carrier_name||'شركة النقل')+'</div><div class="text-sm text-slate-500 mt-1">رقم التتبع: '+esc(ship.tracking_code||'غير متوفر')+'</div><div class="text-sm text-slate-500 mt-1">المدة المتوقعة: '+Number(ship.estimated_days||0)+' يوم</div></div><div class="mt-6">'+transportTimeline(ship.status)+'</div><div class="mt-5 text-xs text-slate-400">آخر تحديث: '+new Date(ship.status_updated_at||ship.updated_at||Date.now()).toLocaleString('ar-SA')+'</div></div></div>';
+}
+async function adminUpdateTransportStatus(id){
+ const status=prompt('اختر الحالة: ready_for_pickup / picked_up / in_transit / arrived_aden / ready / delivered / cancelled');if(!status)return;
+ const notes=prompt('ملاحظة الحالة (اختياري)')||null;
+ const {error}=await db.rpc('ofoq_admin_update_transport_status',{p_shipment_id:id,p_status:status.trim(),p_notes:notes});
+ if(error){toast(error.message);return}
+ toast('تم تحديث حالة الشحنة');openAdminDashboard();
+}
+const OFOQ_oldAdminOrdersTransport=loadAdminOrders;
+loadAdminOrders=async function(){
+ await OFOQ_oldAdminOrdersTransport();
+ const rows=document.querySelectorAll('[data-shipment-id]');
+ rows.forEach(row=>{if(!row.querySelector('.ofoq-track-btn')){const id=row.dataset.shipmentId;const b=document.createElement('button');b.className='ofoq-track-btn px-3 py-2 rounded-xl bg-slate-100 text-xs font-bold';b.textContent='تحديث النقل';b.onclick=()=>adminUpdateTransportStatus(id);row.appendChild(b)}});
+};
 </script>
