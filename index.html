@@ -399,4 +399,29 @@ async function openCheckout(){
  const t=cartTotals();
  document.getElementById('modal').innerHTML='<div class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"><div class="bg-white rounded-[30px] p-7 w-full max-w-2xl max-h-[90vh] overflow-auto"><div class="flex justify-between"><h2 class="text-2xl font-extrabold">إتمام الطلب</h2><button onclick="showCart()">✕</button></div><div class="grid md:grid-cols-2 gap-3 mt-6"><input id="coName" value="'+esc(a?.full_name||p?.full_name||'')+'" class="p-4 rounded-2xl bg-slate-50" placeholder="الاسم الكامل *"><input id="coPhone" value="'+esc(a?.phone||p?.phone||'')+'" class="p-4 rounded-2xl bg-slate-50" placeholder="رقم الهاتف *"><input id="coCity" value="'+esc(a?.city||'Aden')+'" class="p-4 rounded-2xl bg-slate-50" placeholder="المدينة"><input id="coDistrict" value="'+esc(a?.district||'')+'" class="p-4 rounded-2xl bg-slate-50" placeholder="المديرية / المنطقة"><input id="coAddress" value="'+esc(a?.address||'')+'" class="p-4 rounded-2xl bg-slate-50 md:col-span-2" placeholder="العنوان بالتفصيل"><select id="coPay" class="p-4 rounded-2xl bg-slate-50 md:col-span-2"><option value="manual_transfer">تحويل بنكي / دفع يدوي — بانتظار مراجعة الإدارة</option></select><textarea id="coNotes" class="p-4 rounded-2xl bg-slate-50 md:col-span-2 h-24" placeholder="ملاحظات الطلب (اختياري)"></textarea></div><div class="mt-5 bg-cream rounded-2xl p-5"><div class="flex justify-between"><span>المنتجات</span><b>'+money(t.subtotal)+'</b></div><div class="flex justify-between mt-2"><span>رسوم الخدمة</span><b>'+money(t.service)+'</b></div><div class="flex justify-between border-t mt-3 pt-3 text-xl"><span>الإجمالي</span><b>'+money(t.total)+'</b></div></div><button onclick="placeOrder()" class="w-full mt-5 bg-navy text-white py-4 rounded-2xl font-bold">تأكيد إنشاء الطلب</button><p id="coMsg" class="text-center text-sm mt-3 text-slate-500"></p></div></div>';
 }
+
+/* OFOQ phase 9: professional product filters */
+window.ofoqFilters={category:"",condition:"",min:"",max:""};
+function openProductFilters(){
+ const f=window.ofoqFilters;
+ document.getElementById('modal').innerHTML='<div class="fixed inset-0 z-[60] bg-black/50 flex items-end md:items-center justify-center p-4"><div class="bg-white rounded-[30px] p-7 w-full max-w-lg"><div class="flex justify-between items-center"><div><p class="text-gold text-sm font-bold">FILTERS</p><h2 class="text-2xl font-extrabold">تصفية المنتجات</h2></div><button onclick="document.getElementById(\\'modal\\').innerHTML=\\'\\'">✕</button></div><div class="grid gap-3 mt-6"><select id="pfCategory" class="p-4 rounded-2xl bg-slate-50"><option value="">كل التصنيفات</option>'+cats.map(x=>'<option value="'+esc(x[1])+'">'+x[1]+'</option>').join('')+'</select><select id="pfCondition" class="p-4 rounded-2xl bg-slate-50"><option value="">كل الحالات</option><option value="new">جديد</option><option value="nearly_new">شبه جديد</option><option value="used">مستعمل</option></select><div class="grid grid-cols-2 gap-3"><input id="pfMin" type="number" min="0" class="p-4 rounded-2xl bg-slate-50" placeholder="أقل سعر"><input id="pfMax" type="number" min="0" class="p-4 rounded-2xl bg-slate-50" placeholder="أعلى سعر"></div></div><div class="flex gap-3 mt-6"><button onclick="clearProductFilters()" class="flex-1 border py-3 rounded-2xl font-bold">مسح</button><button onclick="applyProductFilters()" class="flex-1 bg-navy text-white py-3 rounded-2xl font-bold">تطبيق</button></div></div></div>';
+ document.getElementById('pfCategory').value=f.category;document.getElementById('pfCondition').value=f.condition;document.getElementById('pfMin').value=f.min;document.getElementById('pfMax').value=f.max;
+}
+function clearProductFilters(){window.ofoqFilters={category:"",condition:"",min:"",max:""};filter();document.getElementById('modal').innerHTML='';toast('تم مسح الفلاتر')}
+function applyProductFilters(){window.ofoqFilters={category:document.getElementById('pfCategory').value,condition:document.getElementById('pfCondition').value,min:document.getElementById('pfMin').value,max:document.getElementById('pfMax').value};filter();document.getElementById('modal').innerHTML='';toast('تم تطبيق الفلاتر')}
+function filter(){
+ const q=(query||'').toLowerCase(),f=window.ofoqFilters||{};
+ const min=f.min===""?0:Number(f.min),max=f.max===""?Infinity:Number(f.max);
+ const list=products.filter(p=>{
+  const hay=((p.name_ar||'')+' '+(p.name_en||'')+' '+(p.seller?.store_name||'')).toLowerCase();
+  const categoryOk=!f.category||hay.includes(f.category.toLowerCase())||(String(p.category_id||'').toLowerCase()===f.category.toLowerCase());
+  return (!q||hay.includes(q))&&categoryOk&&(!f.condition||p.condition===f.condition)&&(Number(p.price||0)>=min)&&(Number(p.price||0)<=max);
+ });
+ drawGrid(list);
+}
+function drawGrid(list){
+ const box=document.getElementById('grid'),rt=document.getElementById('resultText');if(!box)return;
+ box.innerHTML=list.length?list.map(card).join(''):'<div class="col-span-full py-16 text-center text-slate-400"><div class="text-4xl mb-3">⌕</div><b>لا توجد نتائج مطابقة</b><p class="text-sm mt-2">جرّب تغيير كلمات البحث أو الفلاتر.</p></div>';
+ if(rt)rt.innerHTML=list.length+ ' منتج'+(Object.values(window.ofoqFilters||{}).some(Boolean)?' • فلاتر مفعّلة':'');
+}
 </script></body></html>
