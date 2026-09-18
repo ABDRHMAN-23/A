@@ -155,4 +155,78 @@ async function openSellerDashboard(){
  document.getElementById('modal').innerHTML='<div class="fixed inset-0 z-50 bg-cream overflow-auto"><div class="max-w-6xl mx-auto p-4 md:p-8"><div class="flex flex-wrap items-center justify-between gap-3 mb-6"><div><p class="text-gold font-bold text-sm">لوحة البائع</p><h2 class="text-3xl font-extrabold">'+esc(seller.store_name)+'</h2><p class="text-slate-500 text-sm mt-1">حساب معتمد • جدة</p></div><div class="flex gap-2"><button onclick="sellerAddProduct(\''+seller.id+'\')" class="bg-navy text-white px-4 py-3 rounded-2xl font-bold">+ إضافة منتج</button><button onclick="signOut()" class="bg-white px-4 py-3 rounded-2xl">تسجيل الخروج</button></div></div><div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6"><div class="bg-navy text-white rounded-3xl p-5"><span class="text-slate-300 text-sm">الرصيد المتاح</span><div class="text-2xl font-extrabold mt-2">'+money(wallet?.balance_sar||0)+'</div></div><div class="bg-white rounded-3xl p-5"><span class="text-slate-400 text-sm">قيد التسوية</span><div class="text-2xl font-extrabold mt-2">'+money(wallet?.pending_sar||0)+'</div></div><div class="bg-white rounded-3xl p-5"><span class="text-slate-400 text-sm">إجمالي الأرباح</span><div class="text-2xl font-extrabold mt-2">'+money(wallet?.total_earned_sar||0)+'</div></div><div class="bg-white rounded-3xl p-5"><span class="text-slate-400 text-sm">المنتجات</span><div class="text-2xl font-extrabold mt-2">'+(prods?.length||0)+'</div></div></div><div class="grid lg:grid-cols-2 gap-6"><section class="bg-white rounded-3xl p-6"><h3 class="text-xl font-extrabold mb-4">منتجات المتجر</h3><div class="space-y-3">'+(prods||[]).map(x=>'<div class="flex gap-3 items-center border-b pb-3"><img src="'+esc(x.images?.[0]||'')+'" class="w-16 h-16 rounded-xl object-cover bg-slate-100"><div class="flex-1 min-w-0"><b class="block truncate">'+esc(x.name_ar)+'</b><div class="text-sm text-slate-500">'+money(x.price)+' • '+cond(x.condition)+' • المخزون '+(x.stock||0)+'</div></div><span class="text-xs px-2 py-1 rounded-full '+(x.is_active?'bg-emerald-50 text-emerald-700':'bg-slate-100 text-slate-500')+'">'+(x.is_active?'منشور':'مخفي')+'</span></div>').join('')||'<p class="text-slate-400 py-8 text-center">لا توجد منتجات بعد.</p>'+'</div></section><section class="bg-white rounded-3xl p-6"><h3 class="text-xl font-extrabold mb-4">سجل المحفظة</h3><div class="space-y-3">'+(tx||[]).map(x=>'<div class="flex justify-between gap-3 border-b pb-3"><div><b>'+esc(x.description||x.type)+'</b><div class="text-xs text-slate-400">'+new Date(x.created_at).toLocaleString('ar-SA')+'</div></div><strong>'+money(x.amount_sar||0)+'</strong></div>').join('')||'<p class="text-slate-400 py-8 text-center">لا توجد تسويات بعد.</p>'+'</div></section></div><section class="bg-white rounded-3xl p-6 mt-6"><h3 class="text-xl font-extrabold mb-4">آخر المبيعات</h3><div class="space-y-3">'+(orders||[]).slice(0,12).map(o=>'<div class="flex justify-between border-b pb-3"><div><b>'+esc(o.product_name)+'</b><div class="text-xs text-slate-400">الكمية: '+(o.quantity||1)+'</div></div><strong>'+money(o.seller_amount_sar||0)+'</strong></div>').join('')||'<p class="text-slate-400 py-8 text-center">لا توجد مبيعات بعد.</p>'+'</div></section></div></div>'
 }
 
+
+/* OFOQ marketplace phase 2: stores, real category filtering, favorites, product reviews */
+let OFOQ_CATEGORY='';
+function productCategory(p){return p.category?.name_ar||p.category?.name_en||''}
+function enhancedCard(p){
+ const favIcon=window.ofoqFavIds&&window.ofoqFavIds.has(p.id)?'♥':'♡';
+ return '<article class="lift bg-white rounded-[28px] overflow-hidden border border-slate-100 cursor-pointer" onclick="openProduct(\''+esc(p.id)+'\')"><div class="relative aspect-[4/3] bg-slate-100 overflow-hidden"><img src="'+esc(p.images?.[0]||'')+'" class="w-full h-full object-cover" loading="lazy"><span class="absolute top-3 right-3 px-3 py-1 rounded-full bg-white/90 text-xs font-bold">'+esc(cond(p.condition))+'</span><button onclick="event.stopPropagation();toggleFavProduct(\''+esc(p.id)+'\')" class="absolute top-3 left-3 w-10 h-10 rounded-full bg-white/90 grid place-items-center text-xl shadow">'+favIcon+'</button><button onclick="event.stopPropagation();addCart(\''+esc(p.id)+'\')" class="absolute bottom-3 left-3 w-11 h-11 rounded-full bg-navy text-white grid place-items-center shadow-lg">+</button></div><div class="p-4"><button onclick="event.stopPropagation();openSellerStore(\''+esc(p.seller_id||'')+'\')" class="text-xs text-slate-400 mb-1 hover:text-navy">'+esc(p.seller?.store_name||'بائع موثّق')+'</button><h3 class="font-bold truncate">'+esc(p.name_ar||p.name_en||'منتج')+'</h3><div class="flex items-center justify-between mt-3"><strong class="text-lg">'+money(p.price)+'</strong><span class="text-xs text-slate-400">★ '+(p.seller?.rating||'—')+'</span></div><div class="mt-2 text-xs text-slate-500">'+esc(productCategory(p)||'سوق جدة')+' • 🚚 إلى اليمن</div></div></article>'
+}
+async function loadProducts(){
+ try{
+  const {data,error}=await db.from('ofoq_products').select('*, seller:ofoq_sellers(id,store_name,rating), category:ofoq_categories(id,name_ar,name_en)').eq('is_active',true).order('created_at',{ascending:false});
+  if(error)throw error;
+  if(data?.length){products=data;drawGrid(products)}
+  else drawGrid(products);
+  await loadFavoriteIds();
+ }catch(e){console.log(e)}
+}
+function drawGrid(list){const el=document.getElementById('grid');if(!el)return;el.innerHTML=list.length?list.map(enhancedCard).join(''):'<div class="col-span-full py-16 text-center text-slate-400">لا توجد نتائج مطابقة.</div>';const rt=document.getElementById('resultText');if(rt)rt.textContent=list.length+' منتج'}
+function filter(){
+ const q=(query||'').trim().toLowerCase(),cat=(OFOQ_CATEGORY||'').toLowerCase();
+ drawGrid(products.filter(p=>{
+  const hay=[p.name_ar,p.name_en,p.seller?.store_name,productCategory(p)].join(' ').toLowerCase();
+  return (!q||hay.includes(q))&&(!cat||productCategory(p).toLowerCase().includes(cat));
+ }))
+}
+function chooseCategory(name){OFOQ_CATEGORY=name;query='';filter();document.getElementById('products')?.scrollIntoView({behavior:'smooth'});toast('الفئة: '+name)}
+async function openStores(){
+ const {data,error}=await db.from('ofoq_sellers').select('id,store_name,rating,description,area').eq('status','approved').order('rating',{ascending:false});
+ if(error){toast(error.message);return}
+ document.getElementById('modal').innerHTML='<div class="fixed inset-0 z-50 bg-cream overflow-auto"><div class="max-w-6xl mx-auto p-4 md:p-8"><div class="flex justify-between items-center mb-7"><div><p class="text-gold font-bold text-sm">OFOQ STORES</p><h2 class="text-3xl font-extrabold">متاجر وباعة جدة</h2><p class="text-slate-500 mt-1">اكتشف المتاجر المعتمدة وتصفح منتجات كل متجر.</p></div><button onclick="document.getElementById(\'modal\').innerHTML=\'\';render()" class="bg-white px-4 py-3 rounded-2xl">إغلاق</button></div><div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">'+((data||[]).map(s=>'<button onclick="openSellerStore(\''+s.id+'\')" class="text-right bg-white rounded-3xl p-6 border border-slate-100 lift"><div class="w-14 h-14 rounded-2xl bg-navy text-white grid place-items-center text-2xl font-extrabold">أ</div><h3 class="font-extrabold text-lg mt-4">'+esc(s.store_name)+'</h3><div class="text-sm text-slate-500 mt-1">جدة'+(s.area?' • '+esc(s.area):'')+'</div><div class="mt-3 text-sm">★ '+(s.rating||'—')+'</div><p class="text-sm text-slate-400 mt-3 line-clamp-2">'+esc(s.description||'متجر معتمد على أُفُق')+'</p></button>').join('')||'<div class="col-span-full bg-white rounded-3xl p-12 text-center text-slate-400">لا توجد متاجر معتمدة حاليًا.</div>')+'</div></div></div>'
+}
+async function openSellerStore(sellerId){
+ if(!sellerId){toast('بيانات المتجر غير متوفرة');return}
+ const [{data:s},{data:ps,error}]=await Promise.all([
+  db.from('ofoq_sellers').select('*').eq('id',sellerId).single(),
+  db.from('ofoq_products').select('*, seller:ofoq_sellers(id,store_name,rating), category:ofoq_categories(id,name_ar,name_en)').eq('seller_id',sellerId).eq('is_active',true).order('created_at',{ascending:false})
+ ]);
+ if(error){toast(error.message);return}
+ document.getElementById('modal').innerHTML='<div class="fixed inset-0 z-50 bg-cream overflow-auto"><div class="max-w-6xl mx-auto p-4 md:p-8"><button onclick="openStores()" class="bg-white px-4 py-2 rounded-xl mb-5">← المتاجر</button><section class="bg-navy text-white rounded-[32px] p-7 md:p-10"><div class="flex flex-wrap justify-between gap-5"><div><p class="text-gold font-bold text-sm">متجر معتمد</p><h2 class="text-3xl font-extrabold mt-2">'+esc(s?.store_name)+'</h2><p class="text-slate-300 mt-2">جدة'+(s?.area?' • '+esc(s.area):'')+'</p></div><div class="bg-white/10 rounded-2xl px-5 py-4">★ <b>'+(s?.rating||'—')+'</b></div></div><p class="text-slate-300 mt-5 max-w-2xl">'+esc(s?.description||'متجر على منصة أُفُق')+'</p></section><div class="flex items-center justify-between mt-8"><h3 class="text-2xl font-extrabold">منتجات المتجر</h3><span class="text-sm text-slate-400">'+(ps?.length||0)+' منتج</span></div><div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-5">'+((ps||[]).map(enhancedCard).join('')||'<div class="col-span-full py-12 text-center text-slate-400">لا توجد منتجات منشورة.</div>')+'</div></div></div>'
+}
+window.ofoqFavIds=new Set();
+async function loadFavoriteIds(){
+ const {data:{user}}=await db.auth.getUser();if(!user){window.ofoqFavIds=new Set();return}
+ const {data}=await db.from('ofoq_favorites').select('product_id').eq('customer_id',user.id);
+ window.ofoqFavIds=new Set((data||[]).map(x=>x.product_id));
+ if(typeof drawGrid==='function'&&products?.length)filter()
+}
+async function toggleFavProduct(id){
+ const {data:{user}}=await db.auth.getUser();if(!user){openAuth();return}
+ const {data:old}=await db.from('ofoq_favorites').select('id').eq('customer_id',user.id).eq('product_id',id).maybeSingle();
+ if(old?.id){const {error}=await db.from('ofoq_favorites').delete().eq('id',old.id);if(error){toast(error.message);return}window.ofoqFavIds.delete(id);toast('أزيل المنتج من المفضلة')}
+ else {const {error}=await db.from('ofoq_favorites').insert({customer_id:user.id,product_id:id});if(error){toast(error.message);return}window.ofoqFavIds.add(id);toast('أضيف المنتج إلى المفضلة')}
+ filter()
+}
+async function openFavorites(){
+ const {data:{user}}=await db.auth.getUser();if(!user){openAuth();return}
+ const {data,error}=await db.from('ofoq_favorites').select('product_id,product:ofoq_products(*, seller:ofoq_sellers(id,store_name,rating), category:ofoq_categories(id,name_ar,name_en))').eq('customer_id',user.id).order('created_at',{ascending:false});
+ if(error){toast(error.message);return}
+ const list=(data||[]).map(x=>x.product).filter(Boolean);
+ document.getElementById('modal').innerHTML='<div class="fixed inset-0 z-50 bg-cream overflow-auto"><div class="max-w-6xl mx-auto p-4 md:p-8"><div class="flex justify-between items-center mb-7"><div><p class="text-gold font-bold text-sm">YOUR FAVORITES</p><h2 class="text-3xl font-extrabold">المفضلة</h2></div><button onclick="document.getElementById(\'modal\').innerHTML=\'\';render()" class="bg-white px-4 py-3 rounded-2xl">إغلاق</button></div><div class="grid grid-cols-2 lg:grid-cols-4 gap-4">'+(list.map(enhancedCard).join('')||'<div class="col-span-full bg-white rounded-3xl p-12 text-center text-slate-400">لم تضف منتجات إلى المفضلة بعد.</div>')+'</div></div></div>'
+}
+async function openProduct(id){
+ const p=products.find(x=>x.id===id)||null;
+ const {data:reviews}=await db.from('ofoq_product_reviews').select('rating,comment,created_at').eq('product_id',id).order('created_at',{ascending:false}).limit(20);
+ if(!p){toast('المنتج غير موجود');return}
+ const avg=(reviews||[]).length?((reviews.reduce((a,r)=>a+Number(r.rating||0),0)/(reviews.length)).toFixed(1)):(p.seller?.rating||'—');
+ document.getElementById('modal').innerHTML='<div class="fixed inset-0 z-50 bg-black/50 flex items-end md:items-center justify-center p-4"><div class="bg-white rounded-[32px] w-full max-w-5xl max-h-[92vh] overflow-auto"><div class="grid md:grid-cols-2"><div class="bg-slate-50 p-5"><img src="'+esc(p.images?.[0]||'')+'" class="w-full aspect-square object-cover rounded-3xl"><div class="flex gap-2 mt-3">'+(p.images||[]).slice(0,5).map(u=>'<img src="'+esc(u)+'" class="w-16 h-16 rounded-xl object-cover">').join('')+'</div></div><div class="p-6 md:p-8"><div class="flex justify-between"><span class="px-3 py-1 rounded-full bg-cream text-sm font-bold">'+esc(cond(p.condition))+'</span><button onclick="document.getElementById(\'modal\').innerHTML=\'\'" class="w-10 h-10 rounded-xl bg-slate-100">✕</button></div><p class="text-sm text-slate-400 mt-5">'+esc(p.seller?.store_name||'بائع موثّق')+'</p><h2 class="text-3xl font-extrabold mt-1">'+esc(p.name_ar||p.name_en)+'</h2><div class="flex gap-3 items-center mt-3"><b>★ '+avg+'</b><span class="text-slate-400">'+(reviews?.length||0)+' تقييم</span></div><div class="text-3xl font-extrabold mt-5">'+money(p.price)+'</div><p class="text-slate-500 mt-3 leading-7">'+esc(p.description||'منتج متوفر من بائع معتمد في جدة.')+'</p><div class="mt-5 rounded-2xl bg-cream p-4 text-sm">🚚 الشحن من جدة إلى اليمن<br>⏱️ مدة الوصول تحدد حسب شركة النقل والمنتج</div><div class="flex gap-3 mt-6"><button onclick="addCart(\''+esc(p.id)+'\')" class="flex-1 bg-navy text-white py-4 rounded-2xl font-bold">أضف إلى السلة</button><button onclick="toggleFavProduct(\''+esc(p.id)+'\')" class="w-14 rounded-2xl border text-2xl">'+(window.ofoqFavIds.has(p.id)?'♥':'♡')+'</button></div></div></div><section class="p-6 md:p-8 border-t"><div class="flex justify-between items-center"><h3 class="text-xl font-extrabold">تقييمات العملاء</h3><span class="text-sm text-slate-400">★ '+avg+'</span></div><div class="mt-4 space-y-3">'+((reviews||[]).map(r=>'<div class="rounded-2xl bg-slate-50 p-4"><div class="font-bold">★ '+Number(r.rating)+'/5</div><p class="text-sm text-slate-600 mt-1">'+esc(r.comment||'بدون تعليق')+'</p><div class="text-xs text-slate-400 mt-2">'+new Date(r.created_at).toLocaleDateString('ar-SA')+'</div></div>').join('')||'<p class="text-slate-400 py-6">لا توجد تقييمات بعد.</p>')+'</div></section></div></div>'
+}
+function wireOfoqNavigation(){
+ document.querySelectorAll('nav a').forEach(a=>{if(a.textContent.includes('المتاجر'))a.onclick=e=>{e.preventDefault();openStores()};if(a.textContent.includes('العروض'))a.onclick=e=>{e.preventDefault();query='';OFOQ_CATEGORY='';filter();document.getElementById('products')?.scrollIntoView({behavior:'smooth'});toast('العروض والمنتجات المميزة')};});
+ document.querySelectorAll('button').forEach(b=>{if(b.textContent.trim()==='♡')b.onclick=openFavorites});
+ document.querySelectorAll('#categories button').forEach((b,i)=>b.onclick=()=>chooseCategory(cats[i][1]));
+}
+setTimeout(wireOfoqNavigation,0);
 </script></body></html>
