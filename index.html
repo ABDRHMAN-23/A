@@ -98,7 +98,7 @@ async function customerOrders(){
  const {data:{user}}=await db.auth.getUser();if(!user){openAuth();return}
  const [{data:orders,error:oe},{data:payments},{data:shipments},{data:items}]=await Promise.all([
   db.from('ofoq_orders').select('*').eq('customer_id',user.id).order('created_at',{ascending:false}),
-  db.from('ofoq_payments').select('id,order_id,status,payment_reference,receipt_url,created_at').eq('order_id',user.id).limit(1),
+  db.from('ofoq_payments').select('id,order_id,status,payment_reference,receipt_url,created_at').order('created_at',{ascending:false}).limit(100),
   db.from('ofoq_transport_shipments').select('order_id,carrier_name,tracking_code,estimated_days,status,status_updated_at').order('created_at',{ascending:false}),
   db.from('ofoq_order_items').select('*').order('created_at',{ascending:false})
  ]);
