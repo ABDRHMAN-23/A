@@ -462,6 +462,27 @@ async function resolveDispute(id){
  if(error){toast(error.message);return}
  toast('تم تحديث النزاع');loadAdminDisputes();
 }
+
+/* OFOQ phase 12: multi-seller fulfillment UI */
+async function loadSellerFulfillments(){
+ const box=document.getElementById('sellerFulfillments');if(!box)return;
+ const {data:{user}}=await db.auth.getUser();if(!user)return;
+ const {data:seller}=await db.from('ofoq_sellers').select('id,store_name').eq('user_id',user.id).maybeSingle();
+ if(!seller){box.textContent='حساب البائع غير مرتبط.';return}
+ const {data:items}=await db.from('ofoq_order_items').select('*').eq('seller_id',seller.id).order('created_at',{ascending:false}).limit(100);
+ const ids=[...new Set((items||[]).map(x=>x.order_id))];if(!ids.length){box.innerHTML='<p class="text-slate-400 text-center py-6">لا توجد طلبات لمنتجاتك.</p>';return}
+ const [{data:orders},{data:fs}]=await Promise.all([db.from('ofoq_orders').select('id,status,payment_status,created_at,total_sar,customer_name').in('id',ids),db.from('ofoq_order_seller_fulfillments').select('*').eq('seller_id',seller.id).in('order_id',ids)]);
+ const fm=new Map((fs||[]).map(x=>[x.order_id,x])), om=new Map((orders||[]).map(x=>[x.id,x]));
+ box.innerHTML=ids.map(id=>{const o=om.get(id),f=fm.get(id)||{status:'pending'};const its=items.filter(x=>x.order_id===id);if(!o)return '';return '<article class="border rounded-2xl p-4"><div class="flex justify-between gap-3"><div><b>طلب #'+id.slice(0,10).toUpperCase()+'</b><div class="text-xs text-slate-400 mt-1">'+esc(o.customer_name||'عميل')+'</div><div class="text-sm mt-2">'+its.map(x=>esc(x.product_name)+' × '+x.quantity).join(' • ')+'</div></div><span class="px-3 py-1 rounded-full bg-cream text-xs font-bold">'+esc(f.status)+'</span></div><div class="flex flex-wrap gap-2 mt-4">'+(o.payment_status==='paid'?'<button onclick="sellerFulfill(\''+id+'\',\'confirmed\')" class="px-3 py-2 rounded-xl bg-slate-100 font-bold">تأكيد</button><button onclick="sellerFulfill(\''+id+'\',\'preparing\')" class="px-3 py-2 rounded-xl bg-slate-100 font-bold">قيد التجهيز</button><button onclick="sellerFulfill(\''+id+'\',\'ready\')" class="px-3 py-2 rounded-xl bg-navy text-white font-bold">جاهز للشحن</button>':'<span class="text-amber-700 text-sm">بانتظار تأكيد الدفع من الإدارة</span>')+'</div></article>'}).join('');
+}
+async function sellerFulfill(orderId,status){
+ const {error}=await db.rpc('ofoq_seller_update_fulfillment',{p_order_id:orderId,p_status:status,p_notes:null});
+ if(error){toast(error.message);return}toast('تم تحديث حالة تجهيز طلبك');loadSellerFulfillments();
+}
+const OFOQ_openSellerDashboard_old=openSellerDashboard;
+openSellerDashboard=async function(){await OFOQ_openSellerDashboard_old();const root=document.querySelector('#modal > div > div');if(!root)return;const s=document.createElement('section');s.className='bg-white rounded-3xl p-6 mt-4';s.innerHTML='<div><p class="text-gold text-sm font-bold">FULFILLMENT</p><h3 class="text-xl font-extrabold">طلبات منتجات متجري</h3></div><div id="sellerFulfillments" class="space-y-3 mt-5">جاري التحميل...</div>';root.appendChild(s);loadSellerFulfillments();};
+const OFOQ_customerOrderDetails_old=customerOrderDetails;
+customerOrderDetails=async function(id){await OFOQ_customerOrderDetails_old(id);const box=document.querySelector('#modal > div > div');if(!box)return;const {data:fs}=await db.from('ofoq_order_seller_fulfillments').select('seller_id,status,updated_at,ready_at').eq('order_id',id);if(fs?.length){const s=document.createElement('section');s.className='mt-5 bg-cream rounded-2xl p-5';s.innerHTML='<h3 class="font-extrabold mb-3">حالة تجهيز المتاجر</h3>'+fs.map(f=>'<div class="flex justify-between border-b border-white/70 py-3 last:border-0"><span>متجر البائع</span><b>'+esc(f.status)+'</b></div>').join('');box.appendChild(s);}};
 </script></body></html>
 async function validateCheckoutCoupon(){
  const input=document.getElementById('coCoupon'),msg=document.getElementById('couponMsg');if(!input||!msg)return;
