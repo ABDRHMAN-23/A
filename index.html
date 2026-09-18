@@ -69,4 +69,80 @@ loadOfoqSettings();
 render();
 window.addEventListener('load',()=>setTimeout(()=>document.getElementById('splash')?.classList.add('hide'),1150));
 if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
+
+/* OFOQ UX hardening: customer order center, receipt retry, shipment timeline, seller ledger, safer cart grouping */
+const OFOQ_STATUS={pending:'بانتظار التأكيد',confirmed:'تم التأكيد',preparing:'جاري التجهيز',picked_up:'تم الاستلام من البائع',in_transit:'في الطريق إلى اليمن',arrived_aden:'وصل عدن',ready:'جاهز للتسليم',delivered:'تم التسليم',cancelled:'ملغي'};
+const OFOQ_STEPS=['confirmed','preparing','picked_up','in_transit','arrived_aden','ready','delivered'];
+function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function statusLabel(s){return OFOQ_STATUS[s]||s||'غير محدد'}
+function orderStepIndex(s){const i=OFOQ_STEPS.indexOf(s);return i<0?0:i}
+function paymentLabel(s){return ({pending:'قيد المراجعة',paid:'تم التحقق من الدفع',rejected:'مرفوض',failed:'فشل الدفع'}[s]||s||'غير محدد')}
+function addCart(id){
+ const p=products.find(x=>x.id===id); if(!p)return;
+ const old=cart.find(x=>x.id===id);
+ if(old){old.quantity=(old.quantity||1)+1}
+ else cart.push({id:p.id,name:p.name_ar,price:p.price,image:p.images?.[0],seller_id:p.seller_id||p.seller?.id,seller_name:p.seller?.store_name||'بائع موثّق',quantity:1});
+ localStorage.ofoqCart=JSON.stringify(cart);updateCount();toast(old?'تمت زيادة الكمية':'تمت إضافة المنتج إلى السلة');
+}
+function cartTotals(){
+ const subtotal=cart.reduce((s,x)=>s+(Number(x.price)||0)*(x.quantity||1),0);
+ const service=Math.round(subtotal*Number(window.ofoqCommission||10))/100;
+ const shipping=Number(window.ofoqShippingBase||0)+Number(window.ofoqAdenDelivery||0);
+ return{subtotal,service,shipping,total:subtotal+service+shipping}
+}
+function showCart(){
+ const t=cartTotals(),groups={};
+ cart.forEach(x=>{const k=x.seller_id||x.seller_name||'seller';(groups[k]??=[]).push(x)});
+ document.getElementById('modal').innerHTML='<div onclick="this.remove()" class="fixed inset-0 z-50 bg-black/40 flex items-end md:items-center justify-center p-4"><div onclick="event.stopPropagation()" class="bg-white rounded-[30px] p-6 w-full max-w-3xl max-h-[90vh] overflow-auto"><div class="flex justify-between items-center"><div><p class="text-gold text-sm font-bold">OFOQ CART</p><h2 class="text-2xl font-extrabold">سلة التسوق</h2></div><button onclick="document.getElementById(\'modal\').innerHTML=\'\'" class="w-10 h-10 rounded-xl bg-slate-100">✕</button></div>'+(cart.length?'<div class="mt-5 space-y-5">'+Object.values(groups).map(g=>'<section class="rounded-2xl border border-slate-100 overflow-hidden"><div class="px-4 py-3 bg-slate-50 font-bold">'+esc(g[0].seller_name||'بائع موثّق')+'</div><div class="p-3 space-y-3">'+g.map(x=>'<div class="flex gap-3 items-center"><img src="'+esc(x.image||'')+'" class="w-20 h-20 rounded-xl object-cover bg-slate-100"><div class="flex-1 min-w-0"><b class="block truncate">'+esc(x.name)+'</b><div class="text-slate-500">'+money(x.price)+'</div><div class="flex items-center gap-2 mt-2"><button onclick="changeQty(\''+x.id+'\',-1)" class="w-8 h-8 rounded-lg bg-slate-100">−</button><span class="min-w-5 text-center">'+(x.quantity||1)+'</span><button onclick="changeQty(\''+x.id+'\',1)" class="w-8 h-8 rounded-lg bg-slate-100">+</button></div></div><button onclick="removeCart(\''+x.id+'\')" class="text-red-500 text-sm">حذف</button></div>').join('')+'</div></section>').join('')+'</div><div class="mt-6 bg-cream rounded-2xl p-5 space-y-2"><div class="flex justify-between"><span>المجموع الفرعي</span><b>'+money(t.subtotal)+'</b></div><div class="flex justify-between"><span>الشحن إلى اليمن</span><b>'+money(t.shipping)+'</b></div><div class="flex justify-between"><span>رسوم الخدمة</span><b>'+money(t.service)+'</b></div><div class="flex justify-between border-t mt-3 pt-3 text-xl"><span>الإجمالي</span><b>'+money(t.total)+'</b></div><p class="text-xs text-slate-400 pt-2">رسوم الشحن الظاهرة هنا تقديرية، والحساب النهائي المعتمد يتم عند إنشاء الطلب.</p><button onclick="openCheckout()" class="w-full mt-4 bg-navy text-white py-4 rounded-2xl font-bold">متابعة الدفع</button></div>':'<div class="py-14 text-center text-slate-400">السلة فارغة حاليًا.</div>')+'</div></div>'
+}
+async function customerOrders(){
+ const {data:{user}}=await db.auth.getUser();if(!user){openAuth();return}
+ const [{data:orders,error:oe},{data:payments},{data:shipments},{data:items}]=await Promise.all([
+  db.from('ofoq_orders').select('*').eq('customer_id',user.id).order('created_at',{ascending:false}),
+  db.from('ofoq_payments').select('id,order_id,status,payment_reference,receipt_url,created_at').eq('order_id',user.id).limit(1),
+  db.from('ofoq_transport_shipments').select('order_id,carrier_name,tracking_code,estimated_days,status,status_updated_at').order('created_at',{ascending:false}),
+  db.from('ofoq_order_items').select('*').order('created_at',{ascending:false})
+ ]);
+ if(oe){toast(oe.message);return}
+ const pmBy={};(payments||[]).forEach(p=>pmBy[p.order_id]=p);
+ const shBy={};(shipments||[]).forEach(s=>{if(!shBy[s.order_id])shBy[s.order_id]=s});
+ document.getElementById('modal').innerHTML='<div class="fixed inset-0 z-50 bg-cream overflow-auto"><div class="max-w-5xl mx-auto p-4 md:p-8"><div class="flex justify-between items-center mb-6"><div><p class="text-gold font-bold text-sm">حساب العميل</p><h2 class="text-3xl font-extrabold">طلباتي</h2><p class="text-slate-500 text-sm mt-1">الدفع والشحن والتحديثات في مكان واحد.</p></div><button onclick="document.getElementById(\'modal\').innerHTML=\'\';render()" class="bg-white px-4 py-3 rounded-2xl">إغلاق</button></div><div class="space-y-4">'+((orders||[]).map(o=>{const p=pmBy[o.id],s=shBy[o.id],oi=(items||[]).filter(i=>i.order_id===o.id);return '<article class="bg-white rounded-3xl p-5 shadow-sm"><div class="flex flex-wrap justify-between gap-3"><div><b>طلب #'+o.id.slice(0,10).toUpperCase()+'</b><div class="text-xs text-slate-400 mt-1">'+new Date(o.created_at).toLocaleString('ar-SA')+'</div></div><div class="flex gap-2 flex-wrap"><span class="px-3 py-1 rounded-full bg-cream text-sm font-bold">'+statusLabel(o.status)+'</span><span class="px-3 py-1 rounded-full '+(p?.status==='paid'?'bg-emerald-50 text-emerald-700':'bg-amber-50 text-amber-700')+' text-sm font-bold">الدفع: '+paymentLabel(p?.status)+'</span></div></div><div class="mt-4 space-y-2">'+oi.map(i=>'<div class="flex justify-between text-sm"><span>'+esc(i.product_name)+' × '+i.quantity+'</span><b>'+money(Number(i.unit_price_sar||0)*Number(i.quantity||1))+'</b></div>').join('')+'</div><div class="mt-4 pt-4 border-t flex flex-wrap items-center justify-between gap-3"><b class="text-lg">'+money(o.total_sar)+'</b><button onclick="customerOrderDetails(\''+o.id+'\')" class="bg-navy text-white px-4 py-2 rounded-xl font-bold">تفاصيل وتتبع</button></div></article>'}).join('')||'<div class="bg-white rounded-3xl p-12 text-center text-slate-400">لا توجد طلبات بعد.</div>')+'</div></div></div>'
+}
+async function customerOrderDetails(id){
+ const [{data:o,error:oe},{data:items},{data:pay},{data:ship}]=await Promise.all([
+  db.from('ofoq_orders').select('*').eq('id',id).single(),
+  db.from('ofoq_order_items').select('*').eq('order_id',id).order('created_at'),
+  db.from('ofoq_payments').select('*').eq('order_id',id).maybeSingle(),
+  db.from('ofoq_transport_shipments').select('*').eq('order_id',id).maybeSingle()
+ ]);
+ if(oe){toast(oe.message);return}
+ const idx=orderStepIndex(ship?.status||o.status),stepNames=[['confirmed','تم تأكيد الطلب'],['preparing','جاري تجهيز الطلب'],['picked_up','استلمت الشحنة من البائع'],['in_transit','في الطريق إلى اليمن'],['arrived_aden','وصلت عدن'],['ready','جاهزة للتسليم'],['delivered','تم التسليم']];
+ document.getElementById('modal').innerHTML='<div class="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4"><div class="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-3xl max-h-[92vh] overflow-auto"><div class="flex justify-between items-center"><div><p class="text-gold text-sm font-bold">تتبع الطلب</p><h2 class="text-2xl font-extrabold">#'+id.slice(0,10).toUpperCase()+'</h2></div><button onclick="customerOrders()" class="w-10 h-10 rounded-xl bg-slate-100">✕</button></div><div class="grid md:grid-cols-2 gap-4 mt-6"><section class="rounded-2xl bg-cream p-5"><div class="text-sm text-slate-500">حالة الطلب</div><div class="text-xl font-extrabold mt-1">'+statusLabel(o.status)+'</div><div class="mt-3 text-sm">الدفع: <b>'+paymentLabel(pay?.status)+'</b></div></section><section class="rounded-2xl bg-cream p-5"><div class="text-sm text-slate-500">الوصول المتوقع</div><div class="text-xl font-extrabold mt-1">'+(ship?.estimated_days?ship.estimated_days+' أيام تقريبًا':'يحدد بعد استلام الشحنة')+'</div><div class="mt-3 text-sm">رقم التتبع: <b>'+esc(ship?.tracking_code||'سيظهر عند توفره')+'</b></div></section></div><section class="mt-5 bg-white border rounded-2xl p-5"><h3 class="font-extrabold">رحلة الشحنة</h3><div class="mt-5 space-y-4">'+stepNames.map((x,i)=>'<div class="flex gap-3 items-start"><div class="w-8 h-8 rounded-full '+(i<=idx?'bg-navy text-white':'bg-slate-100 text-slate-400')+' grid place-items-center text-xs font-bold">'+(i+1)+'</div><div><b class="'+(i<=idx?'text-navy':'text-slate-400')+'">'+x[1]+'</b>'+((i===idx&&ship?.status_updated_at)?'<div class="text-xs text-slate-400 mt-1">آخر تحديث: '+new Date(ship.status_updated_at).toLocaleString('ar-SA')+'</div>':'')+'</div></div>').join('')+'</div></section><section class="mt-5 bg-slate-50 rounded-2xl p-5"><h3 class="font-extrabold mb-3">الدفع</h3><div class="flex justify-between text-sm"><span>الحالة</span><b>'+paymentLabel(pay?.status)+'</b></div><div class="flex justify-between text-sm mt-2"><span>المرجع</span><b>'+esc(pay?.payment_reference||'غير مضاف')+'</b></div>'+(pay?.status!=='paid'?'<div class="mt-4"><input id="retryReceiptFile" type="file" accept="image/*" class="w-full p-3 rounded-xl bg-white border"><input id="retryReceiptRef" value="'+esc(pay?.payment_reference||'')+'" class="w-full mt-2 p-3 rounded-xl bg-white border" placeholder="رقم المرجع / العملية"><button onclick="retryReceipt(\''+id+'\',\''+(pay?.id||'')+'\')" class="w-full mt-3 bg-navy text-white py-3 rounded-xl font-bold">إرسال / إعادة إرسال الإيصال</button><p id="retryMsg" class="text-xs text-slate-500 mt-2"></p></div>':'<div class="mt-3 text-emerald-700 font-bold">تم التحقق من الدفع.</div>')+'</section><section class="mt-5 bg-navy text-white rounded-2xl p-5"><div class="flex justify-between"><span>الإجمالي</span><b class="text-xl">'+money(o.total_sar)+'</b></div></section></div></div>'
+}
+async function retryReceipt(orderId,paymentId){
+ const msg=document.getElementById('retryMsg'),file=document.getElementById('retryReceiptFile')?.files[0];
+ if(!paymentId){msg.textContent='لم يتم العثور على عملية الدفع.';return}
+ if(!file){msg.textContent='اختر صورة الإيصال أولًا.';return}
+ if(file.size>5*1024*1024){msg.textContent='حجم الإيصال يجب ألا يتجاوز 5MB.';return}
+ const {data:{user}}=await db.auth.getUser();if(!user){openAuth();return}
+ const ext=(file.name.split('.').pop()||'jpg').toLowerCase(),path=user.id+'/'+orderId+'/'+crypto.randomUUID()+'.'+ext;
+ msg.textContent='جاري رفع الإيصال...';
+ const up=await db.storage.from('ofoq-receipts').upload(path,file,{upsert:false,contentType:file.type});
+ if(up.error){msg.textContent=up.error.message;return}
+ const {error}=await db.rpc('ofoq_submit_payment_receipt',{p_payment_id:paymentId,p_reference:document.getElementById('retryReceiptRef').value.trim(),p_receipt_url:path});
+ if(error){msg.textContent=error.message;return}
+ toast('تم إرسال الإيصال للمراجعة');customerOrderDetails(orderId)
+}
+async function openSellerDashboard(){
+ const {data:{user}}=await db.auth.getUser();if(!user){openAuth();return}
+ const {data:seller}=await db.from('ofoq_sellers').select('*').eq('user_id',user.id).maybeSingle();if(!seller){toast('لم يتم ربط حساب البائع بمتجر بعد');return}
+ const [{data:prods},{data:wallet},{data:orders},{data:tx}]=await Promise.all([
+  db.from('ofoq_products').select('*').eq('seller_id',seller.id).order('created_at',{ascending:false}),
+  db.from('ofoq_seller_wallets').select('*').eq('seller_id',seller.id).maybeSingle(),
+  db.from('ofoq_order_items').select('*').eq('seller_id',seller.id).order('created_at',{ascending:false}).limit(30),
+  db.from('ofoq_wallet_transactions').select('*').eq('seller_id',seller.id).order('created_at',{ascending:false}).limit(30)
+ ]);
+ document.getElementById('modal').innerHTML='<div class="fixed inset-0 z-50 bg-cream overflow-auto"><div class="max-w-6xl mx-auto p-4 md:p-8"><div class="flex flex-wrap items-center justify-between gap-3 mb-6"><div><p class="text-gold font-bold text-sm">لوحة البائع</p><h2 class="text-3xl font-extrabold">'+esc(seller.store_name)+'</h2><p class="text-slate-500 text-sm mt-1">حساب معتمد • جدة</p></div><div class="flex gap-2"><button onclick="sellerAddProduct(\''+seller.id+'\')" class="bg-navy text-white px-4 py-3 rounded-2xl font-bold">+ إضافة منتج</button><button onclick="signOut()" class="bg-white px-4 py-3 rounded-2xl">تسجيل الخروج</button></div></div><div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6"><div class="bg-navy text-white rounded-3xl p-5"><span class="text-slate-300 text-sm">الرصيد المتاح</span><div class="text-2xl font-extrabold mt-2">'+money(wallet?.balance_sar||0)+'</div></div><div class="bg-white rounded-3xl p-5"><span class="text-slate-400 text-sm">قيد التسوية</span><div class="text-2xl font-extrabold mt-2">'+money(wallet?.pending_sar||0)+'</div></div><div class="bg-white rounded-3xl p-5"><span class="text-slate-400 text-sm">إجمالي الأرباح</span><div class="text-2xl font-extrabold mt-2">'+money(wallet?.total_earned_sar||0)+'</div></div><div class="bg-white rounded-3xl p-5"><span class="text-slate-400 text-sm">المنتجات</span><div class="text-2xl font-extrabold mt-2">'+(prods?.length||0)+'</div></div></div><div class="grid lg:grid-cols-2 gap-6"><section class="bg-white rounded-3xl p-6"><h3 class="text-xl font-extrabold mb-4">منتجات المتجر</h3><div class="space-y-3">'+(prods||[]).map(x=>'<div class="flex gap-3 items-center border-b pb-3"><img src="'+esc(x.images?.[0]||'')+'" class="w-16 h-16 rounded-xl object-cover bg-slate-100"><div class="flex-1 min-w-0"><b class="block truncate">'+esc(x.name_ar)+'</b><div class="text-sm text-slate-500">'+money(x.price)+' • '+cond(x.condition)+' • المخزون '+(x.stock||0)+'</div></div><span class="text-xs px-2 py-1 rounded-full '+(x.is_active?'bg-emerald-50 text-emerald-700':'bg-slate-100 text-slate-500')+'">'+(x.is_active?'منشور':'مخفي')+'</span></div>').join('')||'<p class="text-slate-400 py-8 text-center">لا توجد منتجات بعد.</p>'+'</div></section><section class="bg-white rounded-3xl p-6"><h3 class="text-xl font-extrabold mb-4">سجل المحفظة</h3><div class="space-y-3">'+(tx||[]).map(x=>'<div class="flex justify-between gap-3 border-b pb-3"><div><b>'+esc(x.description||x.type)+'</b><div class="text-xs text-slate-400">'+new Date(x.created_at).toLocaleString('ar-SA')+'</div></div><strong>'+money(x.amount_sar||0)+'</strong></div>').join('')||'<p class="text-slate-400 py-8 text-center">لا توجد تسويات بعد.</p>'+'</div></section></div><section class="bg-white rounded-3xl p-6 mt-6"><h3 class="text-xl font-extrabold mb-4">آخر المبيعات</h3><div class="space-y-3">'+(orders||[]).slice(0,12).map(o=>'<div class="flex justify-between border-b pb-3"><div><b>'+esc(o.product_name)+'</b><div class="text-xs text-slate-400">الكمية: '+(o.quantity||1)+'</div></div><strong>'+money(o.seller_amount_sar||0)+'</strong></div>').join('')||'<p class="text-slate-400 py-8 text-center">لا توجد مبيعات بعد.</p>'+'</div></section></div></div>'
+}
+
 </script></body></html>
