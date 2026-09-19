@@ -604,7 +604,9 @@ window.openAdminDashboard=async function(){await OFOQ_prevAdminDashProducts();se
  };
 })();
 </script>
-</body></html>
+</body>
+<script>
+
 async function validateCheckoutCoupon(){
  const input=document.getElementById('coCoupon'),msg=document.getElementById('couponMsg');if(!input||!msg)return;
  const code=input.value.trim();if(!code){msg.textContent='أدخل رمز الكوبون.';return}
@@ -614,7 +616,7 @@ async function validateCheckoutCoupon(){
  if(!data?.valid){msg.textContent=data?.message||'الكوبون غير صالح';return}
  msg.textContent='✓ خصم '+money(data.discount)+' — سيتم تطبيقه آليًا عند إنشاء الطلب.';
 }
-<script>
+
 /* OFOQ phase 11: secure coupon management + checkout preview */
 async function loadAdminCoupons(){
  const host=document.getElementById('adminCoupons');
@@ -1804,3 +1806,17 @@ body{background:#f7f7f5!important}
  };
 })();
 </script>
+<style id="ofoq-final-splash-fix">
+#splash{position:fixed!important;inset:0!important;z-index:99999!important;background:#fff!important;display:grid!important;place-items:center!important;opacity:1!important;visibility:visible!important;pointer-events:auto!important;transition:opacity .8s ease,visibility .8s ease!important}
+#splash.hide{opacity:0!important;visibility:hidden!important;pointer-events:none!important}
+#splashLogo{width:min(78vw,420px)!important;max-width:420px!important;text-align:center!important;transform:scale(1)!important;opacity:1!important;transition:transform .9s cubic-bezier(.22,1,.36,1),opacity .7s ease!important}
+#splashLogo img{display:block!important;width:100%!important;height:auto!important;object-fit:contain!important}
+#splash.hide #splashLogo{transform:scale(1.10)!important;opacity:0!important}
+</style>
+<script>
+(function(){
+ function revealOfoq(){const splash=document.getElementById('splash');if(!splash||splash.dataset.revealed==='1')return;splash.dataset.revealed='1';setTimeout(()=>splash.classList.add('hide'),1350)}
+ if(document.readyState==='complete')revealOfoq();else window.addEventListener('load',revealOfoq,{once:true});
+})();
+</script>
+</body></html>
