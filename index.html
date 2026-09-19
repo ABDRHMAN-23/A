@@ -824,3 +824,23 @@ window.openAdminDashboard=async function(){
  },300);
 };
 </script>
+<script>
+/* OFOQ phase 20: secure shipment-detail editing */
+window.saveShipment=async function(id){
+ const carrier=prompt('اسم شركة النقل'); if(carrier===null)return;
+ const tracking=prompt('رقم التتبع', ''); if(tracking===null)return;
+ const daysRaw=prompt('المدة المتوقعة بالأيام','');
+ const costRaw=prompt('تكلفة الشحن بالريال السعودي','');
+ const pickup=prompt('نقطة الاستلام في جدة','');
+ const notes=prompt('ملاحظات النقل','');
+ const days=daysRaw===''?null:Number(daysRaw), cost=costRaw===''?null:Number(costRaw);
+ if(days!==null && (!Number.isFinite(days)||days<0)){toast('مدة الشحن غير صحيحة');return;}
+ if(cost!==null && (!Number.isFinite(cost)||cost<0)){toast('تكلفة الشحن غير صحيحة');return;}
+ const {error}=await db.rpc('ofoq_admin_update_shipment_details',{
+  p_shipment_id:id,p_carrier_name:carrier,p_tracking_code:tracking,p_estimated_days:days,
+  p_shipping_cost_sar:cost,p_pickup_location:pickup,p_notes:notes
+ });
+ if(error){toast(error.message);return;}
+ toast('تم حفظ بيانات الشحنة'); if(typeof loadOfoqTransportCenter==='function') loadOfoqTransportCenter();
+};
+</script>
