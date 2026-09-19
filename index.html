@@ -1152,3 +1152,32 @@ window.openCheckout=async function(){
   window.sellerOrderFulfillment=window.ofoqSellerFulfillmentDetails;
 })();
 </script>
+<script>
+/* OFOQ phase 30: customer multi-seller order center */
+(function(){
+  const baseCustomerOrderDetails=window.customerOrderDetails;
+  window.customerOrderDetails=async function(id){
+    const {data:{user}}=await db.auth.getUser();
+    if(!user){openAuth();return;}
+    const {data:o,error}=await db.from('ofoq_orders').select('*').eq('id',id).eq('customer_id',user.id).single();
+    if(error||!o){toast(error?.message||'الطلب غير موجود');return;}
+    const [ir,sr,pr,fr]=await Promise.all([
+      db.from('ofoq_order_items').select('*').eq('order_id',id),
+      db.from('ofoq_transport_shipments').select('*').eq('order_id',id).maybeSingle(),
+      db.from('ofoq_payments').select('*').eq('order_id',id).maybeSingle(),
+      db.from('ofoq_order_seller_fulfillments').select('seller_id,status,updated_at,ready_at,notes,seller:ofoq_sellers(id,store_name,name)').eq('order_id',id)
+    ]);
+    const items=ir.data||[], shipment=sr.data, payment=pr.data, fs=fr.data||[];
+    const sellerMap=Object.fromEntries(fs.map(f=>[f.seller_id,f]));
+    const sellerNames=Object.fromEntries(fs.map(f=>[f.seller_id,f.seller?.store_name||f.seller?.name||'البائع']));
+    const sellerLabel={pending:'بانتظار البائع',confirmed:'تم التأكيد',preparing:'جاري التجهيز',ready:'جاهز للشحن',cancelled:'ملغي'};
+    const transportSteps=['ready_for_pickup','picked_up','in_transit','arrived_aden','ready','delivered'];
+    const transportLabel={ready_for_pickup:'جاهز للاستلام من البائعين',picked_up:'تم استلام الشحنة',in_transit:'في الطريق إلى اليمن',arrived_aden:'وصلت عدن',ready:'جاهزة للتسليم',delivered:'تم التسليم'};
+    const tIdx=shipment?transportSteps.indexOf(shipment.status):-1;
+    const transportHtml=shipment?'<div class="mt-7 rounded-3xl bg-cream p-5"><div class="flex justify-between gap-3 items-start"><div><h3 class="font-extrabold text-lg">رحلة الشحنة</h3><p class="text-xs text-slate-400 mt-1">'+esc(shipment.carrier_name||'وكالة النقل')+(shipment.tracking_code?' · '+esc(shipment.tracking_code):'')+'</p></div><span class="px-3 py-1 rounded-full bg-white text-xs font-bold">'+esc(transportLabel[shipment.status]||statusLabel(shipment.status))+'</span></div><div class="grid sm:grid-cols-3 gap-2 mt-4">'+transportSteps.map((x,i)=>'<div class="rounded-2xl p-3 '+(tIdx>=i?'bg-navy text-white':'bg-white text-slate-400')+'"><div class="text-xs font-bold">'+(i+1)+'</div><div class="text-xs mt-1">'+transportLabel[x]+'</div></div>').join('')+'</div><div class="grid sm:grid-cols-3 gap-3 mt-4 text-sm"><div>الحالة: <b>'+esc(transportLabel[shipment.status]||'—')+'</b></div><div>المدة المتوقعة: <b>'+(shipment.estimated_days||'—')+' يوم</b></div><div>آخر تحديث: <b>'+new Date(shipment.status_updated_at||shipment.created_at).toLocaleString('ar-SA')+'</b></div></div></div>':'<div class="mt-7 rounded-2xl bg-slate-50 p-5 text-sm text-slate-500">سيظهر مسار الشحنة هنا بعد اكتمال تجهيز جميع البائعين.</div>';
+    const groups={};items.forEach(i=>{const k=i.seller_id||'unknown';(groups[k]??=[]).push(i)});
+    const sellersHtml=Object.keys(groups).map(sid=>{const f=sellerMap[sid];const arr=groups[sid];const subtotal=arr.reduce((s,i)=>s+Number(i.unit_price_sar||0)*Number(i.quantity||1),0);return '<section class="rounded-3xl border border-slate-100 overflow-hidden"><div class="bg-slate-50 p-4 flex justify-between gap-3 items-center"><div><b>'+esc(sellerNames[sid]||'البائع')+'</b><div class="text-xs text-slate-400 mt-1">'+arr.length+' منتج</div></div><span class="px-3 py-1 rounded-full bg-white text-xs font-bold">'+esc(sellerLabel[f?.status]||'قيد التجهيز')+'</span></div><div class="p-4 space-y-2">'+arr.map(i=>'<div class="flex justify-between gap-3 text-sm"><span>'+esc(i.product_name)+' × '+Number(i.quantity||0)+'</span><b>'+money(Number(i.unit_price_sar||0)*Number(i.quantity||1))+'</b></div>').join('')+'<div class="border-t pt-3 mt-2 flex justify-between font-bold"><span>إجمالي منتجات المتجر</span><span>'+money(subtotal)+'</span></div></div></section>'}).join('');
+    document.getElementById('modal').innerHTML='<div class="fixed inset-0 z-[60] bg-cream overflow-auto"><div class="max-w-5xl mx-auto p-4 md:p-8"><div class="flex justify-between items-center mb-6"><div><p class="text-gold font-bold text-sm">ORDER TRACKING</p><h2 class="text-3xl font-extrabold">تتبع الطلب #'+id.slice(0,10).toUpperCase()+'</h2><p class="text-slate-500 text-sm mt-1">طلب واحد · '+Object.keys(groups).length+' بائع · '+items.length+' منتج</p></div><button onclick="customerOrders()" class="bg-white px-4 py-3 rounded-2xl">رجوع</button></div><div class="grid lg:grid-cols-[1fr_320px] gap-5"><main><section class="bg-white rounded-3xl p-6"><div class="flex flex-wrap justify-between gap-3"><div><div class="text-sm text-slate-400">حالة الطلب</div><b class="text-2xl">'+statusLabel(o.status)+'</b></div><div class="text-right"><div class="text-sm text-slate-400">الإجمالي</div><b class="text-2xl">'+money(o.total_sar)+'</b></div></div><div class="mt-7">'+trackingTimeline(o.status)+'</div></section><section class="mt-5 bg-white rounded-3xl p-6"><h3 class="text-xl font-extrabold mb-4">تجهيز المتاجر</h3><div class="space-y-3">'+(sellersHtml||'<p class="text-slate-400">لا توجد منتجات.</p>')+'</div></section>'+transportHtml+'</main><aside class="space-y-4"><div class="bg-white rounded-3xl p-5"><h3 class="font-extrabold">الدفع</h3><div class="mt-3 text-sm">الحالة: <b>'+paymentLabel(payment?.status)+'</b></div>'+(payment?.payment_reference?'<div class="text-sm mt-2">المرجع: '+esc(payment.payment_reference)+'</div>':'')+((payment&&['pending','rejected'].includes(payment.status))?'<button onclick="retryReceipt(''+id+'',''+payment.id+'')" class="w-full mt-4 bg-navy text-white py-3 rounded-xl font-bold">إرفاق / إعادة إرسال الإيصال</button>':'')+'</div><div class="bg-white rounded-3xl p-5"><h3 class="font-extrabold">العنوان</h3><p class="text-sm text-slate-500 leading-7 mt-2">'+esc(o.customer_address||'—')+'<br>📞 '+esc(o.customer_phone||'—')+'</p></div></aside></div></div></div>';
+  };
+})();
+</script>
