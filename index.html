@@ -1451,3 +1451,26 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)ofoqRefres
  };
 })();
 </script>
+
+<script>
+/* OFOQ phase 11: customer delivery & Aden handoff experience */
+(function(){
+ const old=window.customerOrderDetails;
+ window.customerOrderDetails=async function(id){
+  await old(id);
+  const ship=await db.from('ofoq_transport_shipments').select('status,carrier_name,tracking_code,estimated_days,pickup_location,notes,status_updated_at').eq('order_id',id).maybeSingle();
+  if(ship.error||!ship.data)return;
+  const s=ship.data,host=document.querySelector('#modal > div > div');
+  if(!host||host.querySelector('.ofoq-delivery-handoff'))return;
+  const labels={arrived_aden:'وصلت الشحنة إلى عدن',ready:'الطلب جاهز للاستلام أو التوصيل',delivered:'تم التسليم'};
+  const isReady=s.status==='ready',arrived=s.status==='arrived_aden';
+  const box=document.createElement('section');
+  box.className='ofoq-delivery-handoff mt-5 rounded-[28px] border border-slate-100 overflow-hidden';
+  box.innerHTML='<div class="p-5 md:p-6 '+(isReady?'bg-emerald-50':'bg-cream')+'"><div class="flex flex-wrap justify-between gap-3 items-start"><div><div class="text-xs font-bold text-gold">OFOQ ADEN DELIVERY</div><h3 class="text-xl font-extrabold mt-1">'+(labels[s.status]||'معلومات التسليم')+'</h3><p class="text-sm text-slate-500 mt-2">'+(isReady?'يمكنك الآن متابعة نقطة الاستلام أو التنسيق للتوصيل.':arrived?'وصلت الشحنة إلى عدن، وسيتم إشعارك عند جاهزيتها للتسليم.':'ستظهر معلومات الاستلام عند وصول الشحنة إلى مرحلة التسليم.')+'</p></div><span class="px-3 py-2 rounded-full text-xs font-bold '+(isReady?'bg-emerald-100 text-emerald-700':'bg-white text-slate-600')+'">'+(isReady?'جاهز الآن':arrived?'وصل عدن':'قيد النقل')+'</span></div>'+
+   (isReady?'<div class="grid md:grid-cols-2 gap-3 mt-5"><div class="bg-white rounded-2xl p-4"><div class="text-xs text-slate-400">نقطة الاستلام / التوصيل</div><div class="font-bold mt-1">'+esc(s.pickup_location||'سيتم تحديدها من إدارة النقل')+'</div></div><div class="bg-white rounded-2xl p-4"><div class="text-xs text-slate-400">الناقل</div><div class="font-bold mt-1">'+esc(s.carrier_name||'أُفُق / مركز النقل')+'</div></div></div>':'')+
+   (s.notes?'<div class="mt-3 bg-white rounded-2xl p-4 text-sm"><span class="text-slate-400">ملاحظة النقل:</span> '+esc(s.notes)+'</div>':'')+
+   '<div class="flex flex-wrap gap-2 mt-4">'+(s.status!=='delivered'?'<button onclick="openTransportTracking(''+id+'')" class="bg-navy text-white px-4 py-3 rounded-xl font-bold">تتبع الشحنة</button>':'')+(isReady&&s.pickup_location?'<button onclick="navigator.clipboard?.writeText('+JSON.stringify(s.pickup_location)+');toast(\'تم نسخ موقع الاستلام\')" class="bg-white border px-4 py-3 rounded-xl font-bold">نسخ موقع الاستلام</button>':'')+'</div></div>';
+  host.appendChild(box);
+ };
+})();
+</script>
