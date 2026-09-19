@@ -26,7 +26,30 @@ function render(){document.getElementById('app').innerHTML=`<header class="stick
 async function loadProducts(){try{const {data}=await db.from('ofoq_products').select('*, seller:ofoq_sellers(store_name,rating)').eq('is_active',true).order('created_at',{ascending:false});if(data?.length){products=data;drawGrid(products)}}catch(e){console.log(e)}}
 async function loadOfoqSettings(){try{const {data}=await db.from('ofoq_settings').select('shipping_base_sar,aden_delivery_sar,default_commission_percent').eq('id',true).maybeSingle();if(data){window.ofoqShippingBase=Number(data.shipping_base_sar||0);window.ofoqAdenDelivery=Number(data.aden_delivery_sar||0);window.ofoqCommission=Number(data.default_commission_percent||10);}}catch(e){console.log(e)}}
 function drawGrid(list){document.getElementById('grid').innerHTML=list.length?list.map(card).join(''):'<div class="col-span-full py-16 text-center text-slate-400">لا توجد نتائج مطابقة.</div>';document.getElementById('resultText').textContent=list.length+' منتج'}
-function filter(){const q=query.toLowerCase();drawGrid(products.filter(p=>(p.name_ar||'').toLowerCase().includes(q)||(p.name_en||'').toLowerCase().includes(q)||(p.seller?.store_name||'').toLowerCase().includes(q)))}
+window.ofoqSearchFilters=window.ofoqSearchFilters||{category:'',condition:'',min:'',max:'',sort:'newest'};
+function filter(){
+ const q=(query||'').trim().toLowerCase(),f=window.ofoqSearchFilters;
+ let list=products.filter(p=>{
+  const hay=[p.name_ar,p.name_en,p.seller?.store_name,productCategory(p),p.description_ar,p.description].filter(Boolean).join(' ').toLowerCase();
+  const price=Number(p.price)||0;
+  return (!q||hay.includes(q))&&(!f.category||productCategory(p)===f.category)&&(!f.condition||p.condition===f.condition)&&(!f.min||price>=Number(f.min))&&(!f.max||price<=Number(f.max));
+ });
+ if(f.sort==='price_low')list.sort((a,b)=>Number(a.price)-Number(b.price));
+ else if(f.sort==='price_high')list.sort((a,b)=>Number(b.price)-Number(a.price));
+ else if(f.sort==='rating')list.sort((a,b)=>Number(b.seller?.rating||0)-Number(a.seller?.rating||0));
+ else if(f.sort==='stock')list.sort((a,b)=>Number(b.stock||0)-Number(a.stock||0));
+ drawGrid(list);
+}
+function ofoqResetFilters(){window.ofoqSearchFilters={category:'',condition:'',min:'',max:'',sort:'newest'};filter();toast('تم مسح الفلاتر')}
+function openSearchFilters(){
+ const f=window.ofoqSearchFilters,cats=[...new Set(products.map(productCategory).filter(Boolean))];
+ document.getElementById('modal').innerHTML='<div onclick="this.remove()" class="fixed inset-0 z-50 bg-black/50 flex items-end md:items-center justify-center p-3"><div onclick="event.stopPropagation()" class="bg-white rounded-[30px] w-full max-w-xl p-6 md:p-8 max-h-[92vh] overflow-auto"><div class="flex justify-between items-center"><div><p class="text-gold text-xs font-bold">OFOQ SEARCH</p><h2 class="text-2xl font-extrabold">بحث وتصفية متقدمة</h2></div><button onclick="document.getElementById(\'modal\').innerHTML=\'\'" class="w-10 h-10 rounded-xl bg-slate-100">✕</button></div><label class="block text-sm font-bold mt-6">التصنيف<select id="ofqCat" class="w-full mt-2 p-3 rounded-2xl bg-slate-50"><option value="">كل التصنيفات</option>'+cats.map(x=>'<option value="'+esc(x)+'" '+(f.category===x?'selected':'')+'>'+esc(x)+'</option>').join('')+'</select></label><label class="block text-sm font-bold mt-4">حالة المنتج<select id="ofqCond" class="w-full mt-2 p-3 rounded-2xl bg-slate-50"><option value="">كل الحالات</option><option value="new" '+(f.condition==='new'?'selected':'')+'>جديد</option><option value="nearly_new" '+(f.condition==='nearly_new'?'selected':'')+'>شبه جديد</option><option value="used" '+(f.condition==='used'?'selected':'')+'>مستعمل</option></select></label><div class="grid grid-cols-2 gap-3 mt-4"><label class="text-sm font-bold">أقل سعر<input id="ofqMin" type="number" min="0" value="'+esc(f.min)+'" class="w-full mt-2 p-3 rounded-2xl bg-slate-50"></label><label class="text-sm font-bold">أعلى سعر<input id="ofqMax" type="number" min="0" value="'+esc(f.max)+'" class="w-full mt-2 p-3 rounded-2xl bg-slate-50"></label></div><label class="block text-sm font-bold mt-4">ترتيب النتائج<select id="ofqSort" class="w-full mt-2 p-3 rounded-2xl bg-slate-50"><option value="newest">الأحدث</option><option value="price_low" '+(f.sort==='price_low'?'selected':'')+'>السعر: الأقل أولًا</option><option value="price_high" '+(f.sort==='price_high'?'selected':'')+'>السعر: الأعلى أولًا</option><option value="rating" '+(f.sort==='rating'?'selected':'')+'>تقييم المتجر</option><option value="stock" '+(f.sort==='stock'?'selected':'')+'>الأكثر توفرًا</option></select></label><div class="flex gap-3 mt-7"><button onclick="ofoqApplyFilters()" class="flex-1 bg-navy text-white py-4 rounded-2xl font-bold">عرض النتائج</button><button onclick="ofoqResetFilters();document.getElementById(\'modal\').innerHTML=\'\'" class="px-5 border rounded-2xl font-bold">مسح</button></div></div></div>';
+}
+function ofoqApplyFilters(){
+ const f=window.ofoqSearchFilters;
+ f.category=document.getElementById('ofqCat').value;f.condition=document.getElementById('ofqCond').value;f.min=document.getElementById('ofqMin').value;f.max=document.getElementById('ofqMax').value;f.sort=document.getElementById('ofqSort').value;
+ document.getElementById('modal').innerHTML='';filter();document.getElementById('products')?.scrollIntoView({behavior:'smooth'});toast('تم تطبيق الفلاتر');
+}
 function updateCount(){document.getElementById('cartCount').textContent=cart.length}
 function addCart(id){const p=products.find(x=>x.id===id);if(!p)return;if(!cart.find(x=>x.id===id))cart.push({id:p.id,name:p.name_ar,price:p.price,image:p.images?.[0]});localStorage.ofoqCart=JSON.stringify(cart);updateCount();toast('تمت إضافة المنتج إلى السلة')}
 function toast(t){const d=document.createElement('div');d.className='fixed bottom-5 left-5 z-50 bg-navy text-white px-5 py-3 rounded-2xl shadow-xl fade';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),2200)}
@@ -1266,4 +1289,8 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)ofoqRefres
   window.render=async function(){const r=await oldRender();mount();return r;};
   document.addEventListener('DOMContentLoaded',mount);
 })();
+</script>
+
+<script>
+(function(){function mount(){if(document.getElementById('ofoqFilterButton'))return;const h=document.querySelector('header .max-w-7xl');if(!h)return;const b=document.createElement('button');b.id='ofoqFilterButton';b.onclick=openSearchFilters;b.className='shrink-0 bg-white/10 border border-white/20 px-3 py-2 rounded-xl text-sm font-bold';b.textContent='⚙ فلترة';const search=h.querySelector('input');search?.parentElement?.appendChild(b)}const oldRender=window.render;window.render=async function(){const r=await oldRender();mount();return r};document.addEventListener('DOMContentLoaded',mount)})();
 </script>
