@@ -1520,3 +1520,19 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)ofoqRefres
  };
 })();
 </script>
+
+<script>
+/* OFOQ phase 14: seller command center */
+(function(){
+ const prev=window.openSellerDashboard;
+ window.openSellerDashboard=async function(){
+  await prev();
+  setTimeout(()=>{
+   const modal=document.getElementById('modal'),root=modal?.querySelector('.max-w-6xl');if(!root||root.querySelector('.ofoq-seller-command'))return;
+   const dash=document.createElement('section');dash.className='ofoq-seller-command mb-6';
+   dash.innerHTML='<div class="bg-navy text-white rounded-[28px] p-5 md:p-6"><div class="flex flex-wrap justify-between items-center gap-4"><div><div class="text-gold text-xs font-bold tracking-widest">OFOQ SELLER CENTER</div><h3 class="text-2xl font-extrabold mt-1">مركز متجرك</h3><p class="text-white/60 text-sm mt-1">إدارة المنتجات والطلبات ومتابعة مستحقات متجرك.</p></div><button onclick="openSellerDashboard()" class="bg-white/10 border border-white/15 px-4 py-3 rounded-xl font-bold">↻ تحديث</button></div><div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-5"><button onclick="sellerProducts()" class="bg-white/10 p-3 rounded-2xl text-right"><b>📦 المنتجات</b><span class="block text-xs text-white/50 mt-1">إضافة وتعديل</span></button><button onclick="sellerOrders()" class="bg-white/10 p-3 rounded-2xl text-right"><b>🧾 الطلبات</b><span class="block text-xs text-white/50 mt-1">تجهيز ومتابعة</span></button><button onclick="openNotifications?.()" class="bg-white/10 p-3 rounded-2xl text-right"><b>🔔 الإشعارات</b><span class="block text-xs text-white/50 mt-1">تحديثات المتجر</span></button><button onclick="render()" class="bg-white/10 p-3 rounded-2xl text-right"><b>🏠 المتجر</b><span class="block text-xs text-white/50 mt-1">العودة للواجهة</span></button></div></div>';
+   root.insertBefore(dash,root.children[1]||root.firstChild);
+  },180);
+ };
+})();
+</script>
