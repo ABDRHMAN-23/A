@@ -1041,3 +1041,19 @@ window.ofoqRenderEditorImages=function(){const h=document.getElementById('oeImag
 window.ofoqRemoveEditorImage=function(i){if((window.ofoqEditorImages||[]).length<=1){toast('يجب الاحتفاظ بصورة واحدة على الأقل');return;}window.ofoqEditorImages.splice(i,1);ofoqRenderEditorImages();};
 window.ofoqSaveProductEditor=async function(id,sellerId){const msg=document.getElementById('oeMsg'),btn=document.getElementById('oeSave'),name=document.getElementById('oeName').value.trim(),price=Number(document.getElementById('oePrice').value),stock=Number(document.getElementById('oeStock').value);if(!name||!Number.isFinite(price)||price<0||!Number.isInteger(stock)||stock<0){msg.textContent='تحقق من الاسم والسعر والمخزون.';return;}btn.disabled=true;btn.textContent='جاري الحفظ...';const uploaded=[];for(const f of (window.ofoqEditorFiles||[])){const ext=(f.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg',path=sellerId+'/'+crypto.randomUUID()+'.'+ext,up=await db.storage.from('ofoq-products').upload(path,f,{upsert:false,contentType:f.type});if(up.error){btn.disabled=false;btn.textContent='حفظ التغييرات';msg.textContent=up.error.message;return;}uploaded.push(db.storage.from('ofoq-products').getPublicUrl(path).data.publicUrl);}const old=(window.ofoqEditorImages||[]).filter(u=>/^https?:\/\//i.test(u));const images=[...old,...uploaded].slice(0,8);const {error}=await db.rpc('ofoq_seller_update_product',{p_product_id:id,p_name_ar:name,p_name_en:document.getElementById('oeNameEn').value.trim()||null,p_description_ar:document.getElementById('oeDesc').value.trim()||null,p_description_en:null,p_price:price,p_stock:stock,p_condition:document.getElementById('oeCondition').value,p_condition_details:document.getElementById('oeConditionDetails').value.trim()||null,p_images:images});if(error){btn.disabled=false;btn.textContent='حفظ التغييرات';msg.textContent=error.message;return;}toast('تم حفظ المنتج بنجاح');sellerProducts();};
 </script>
+
+<script>
+/* OFOQ phase 27: multiseller fulfillment orchestration */
+window.ofoqPrepareMultiseller=async function(orderId){
+ const {data,error}=await db.rpc('ofoq_prepare_multiseller_order',{p_order_id:orderId});
+ if(error){toast(error.message);return;}
+ toast('تم تجهيز الطلب متعدد البائعين'); if(typeof adminOrderDetails==='function')adminOrderDetails(orderId);
+};
+window.ofoqSellerFulfillmentBoard=async function(orderId,hostId){
+ const host=document.getElementById(hostId);if(!host)return;
+ const {data,error}=await db.from('ofoq_order_seller_fulfillments').select('*, seller:ofoq_sellers(id,store_name,name)').eq('order_id',orderId).order('updated_at',{ascending:false});
+ if(error){host.innerHTML='<p class="text-sm text-red-500">'+esc(error.message)+'</p>';return;}
+ const labels={confirmed:'تم التأكيد',preparing:'جاري التجهيز',ready:'جاهز للنقل'};
+ host.innerHTML='<div class="space-y-3">'+(data||[]).map(x=>'<div class="rounded-2xl border bg-white p-4 flex items-center justify-between gap-3"><div><b>'+esc(x.seller?.store_name||x.seller?.name||'البائع')+'</b><div class="text-xs text-slate-400 mt-1">'+(labels[x.status]||x.status)+'</div></div><span class="px-3 py-1 rounded-full text-xs font-bold '+(x.status==='ready'?'bg-emerald-100 text-emerald-700':'bg-amber-100 text-amber-700')+'">'+(labels[x.status]||x.status)+'</span></div>').join('')+'</div>';
+};
+</script>
