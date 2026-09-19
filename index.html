@@ -746,3 +746,8 @@ async function saveOfoqTransportDetails(id){
  const r=await db.from('ofoq_transport_shipments').update(v).eq('id',id);if(r.error){toast(r.error.message);return}toast('تم حفظ بيانات الشحنة');openOfoqTransportCenter();
 }
 </script>
+<script>
+/* OFOQ phase 17: connect transport center to admin actions */
+const OFOQ_prevActions2=ofoqAdminActions;
+ofoqAdminActions=function(){OFOQ_prevActions2();const el=document.getElementById('ofoqAdminActions');if(el&&!el.querySelector('.ofoq-logistics-action'))el.insertAdjacentHTML('beforeend','<button class="ofoq-logistics-action p-4 rounded-2xl bg-white border border-slate-100 text-right hover:shadow-md transition" onclick="openOfoqTransportCenter()"><span class="text-xl">🚚</span><div class="font-bold mt-2">مركز النقل</div><div class="text-xs text-slate-400 mt-1">جدة → عدن</div></button>')};
+</script>
