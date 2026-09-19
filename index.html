@@ -1691,3 +1691,90 @@ body{background:#f7f7f5!important;color:#0a1e3d}
  };
 })();
 </script>
+
+<style id="ofoq-reference-lock">
+/* Phase 18 — supplied-reference visual lock */
+body{background:#f7f7f5!important}
+.ofoq-lock-header{background:#fff!important;color:#0A1E3D!important;border-bottom:1px solid #e9edf2!important;box-shadow:0 5px 24px rgba(10,30,61,.045)!important}
+.ofoq-lock-search{height:46px!important;background:#f5f6f8!important;border:1px solid #eceff3!important;border-radius:999px!important}
+.ofoq-lock-hero{border-radius:28px!important;min-height:455px!important;overflow:hidden;position:relative;box-shadow:0 16px 40px rgba(10,30,61,.10)}
+.ofoq-lock-hero:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(4,20,46,.93) 0%,rgba(5,35,72,.72) 48%,rgba(5,35,72,.18) 100%)}
+.ofoq-lock-hero img{opacity:1!important;filter:saturate(1.08)!important}
+.ofoq-lock-hero-content{position:relative;z-index:2;min-height:455px;display:flex;align-items:center}
+.ofoq-lock-chip{border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.10);backdrop-filter:blur(10px)}
+.ofoq-lock-gold{color:#D4AF37}
+.ofoq-lock-cats{background:#fff!important;border:1px solid #e8ecf1!important;border-radius:20px!important;box-shadow:0 8px 25px rgba(10,30,61,.055)!important}
+.ofoq-lock-cats button{min-width:auto!important;border:0!important;box-shadow:none!important;background:transparent!important;border-radius:999px!important;padding:10px 18px!important;color:#40506a!important;font-size:13px!important}
+.ofoq-lock-cats button:first-child{background:#D4AF37!important;color:#0A1E3D!important}
+.ofoq-lock-products{background:#fff!important;border:1px solid #e8ecf1!important;border-radius:26px!important;box-shadow:0 8px 28px rgba(10,30,61,.045)!important;padding:22px!important}
+.ofoq-lock-products #grid article{border-radius:22px!important;border:1px solid #edf0f3!important;box-shadow:0 7px 22px rgba(10,30,61,.05)!important}
+.ofoq-lock-products #grid article>div:first-child{aspect-ratio:1/1!important;background:#f5f6f6!important}
+.ofoq-lock-products #grid article .p-4{padding:15px!important}
+.ofoq-lock-products #grid article:hover{transform:translateY(-3px);box-shadow:0 15px 32px rgba(10,30,61,.09)!important}
+.ofoq-lock-bottom{display:none}
+.ofoq-lock-ai{position:fixed;right:18px;bottom:92px;z-index:70;width:48px;height:48px;border-radius:50%;background:#D4AF37;color:#0A1E3D;display:grid;place-items:center;box-shadow:0 10px 25px rgba(10,30,61,.18);font-size:21px;border:3px solid #fff}
+@media(max-width:767px){
+ .ofoq-lock-hero,.ofoq-lock-hero-content{min-height:500px!important}
+ .ofoq-lock-hero{border-radius:22px!important}
+ .ofoq-lock-hero:after{background:linear-gradient(0deg,rgba(4,20,46,.94),rgba(4,20,46,.20) 78%)}
+ .ofoq-lock-hero-content{align-items:flex-end!important;padding:25px 20px!important}
+ .ofoq-lock-title{font-size:2.15rem!important}
+ .ofoq-lock-cats{margin-left:14px!important;margin-right:14px!important}
+ .ofoq-lock-products{margin-left:14px!important;margin-right:14px!important;padding:14px!important}
+ .ofoq-lock-bottom{display:grid;position:fixed;left:10px;right:10px;bottom:10px;z-index:60;background:rgba(255,255,255,.96);backdrop-filter:blur(18px);border:1px solid #e8ecf1;border-radius:22px;grid-template-columns:repeat(5,1fr);padding:8px 4px;box-shadow:0 12px 35px rgba(10,30,61,.14)}
+ .ofoq-lock-bottom button{font-size:10px;font-weight:700;color:#657188;padding:5px 2px}
+ .ofoq-lock-bottom button b{display:block;font-size:18px;line-height:20px;margin-bottom:3px;color:#0A1E3D}
+}
+</style>
+<script>
+/* OFOQ phase 18: lock supplied visual direction across the storefront */
+(function(){
+ const prev=window.render;
+ window.render=async function(){
+  const r=await prev();
+  setTimeout(()=>{
+   const app=document.getElementById('app'),home=document.getElementById('home');if(!app||!home)return;
+   const header=app.querySelector('header');
+   if(header){
+    header.className='sticky top-0 z-40 ofoq-lock-header';
+    const search=header.querySelector('input');if(search)search.classList.add('ofoq-lock-search');
+   }
+   const hero=home.querySelector('.ofoq-ref-hero');
+   if(hero){
+    hero.classList.remove('ofoq-ref-hero','ofoq-v2-hero');
+    hero.classList.add('ofoq-lock-hero');
+    hero.innerHTML='<img src="https://images.unsplash.com/photo-1518684079-3c830dcef090?auto=format&fit=crop&w=2200&q=90" class="absolute inset-0 w-full h-full object-cover" alt="من جدة إلى اليمن">'+
+    '<div class="ofoq-lock-hero-content px-6 md:px-14 py-12"><div class="max-w-2xl">'+
+    '<span class="ofoq-lock-chip inline-flex px-4 py-2 rounded-full text-sm font-bold text-white">من جدة إلى اليمن · خيارات بلا حدود</span>'+
+    '<h1 class="ofoq-lock-title text-4xl md:text-6xl font-extrabold leading-tight mt-5 text-white">اكتشف منتجات <span class="ofoq-lock-gold">جدة</span><br>ووصّلها إلى بابك في <span class="ofoq-lock-gold">اليمن</span></h1>'+
+    '<p class="mt-5 text-white/80 text-base md:text-lg leading-8 max-w-xl">منتجات جديدة وشبه جديدة ومستعملة من تجار حقيقيين، مع أسعار واضحة وشحن من جدة إلى اليمن.</p>'+
+    '<div class="flex flex-wrap gap-3 mt-7"><a href="#products" class="bg-[#D4AF37] text-[#0A1E3D] px-7 py-3.5 rounded-2xl font-extrabold">تسوّق الآن ←</a><a href="#categories" class="border border-white/35 bg-white/10 text-white px-7 py-3.5 rounded-2xl font-bold">استكشف التجار</a></div>'+
+    '<div class="flex flex-wrap gap-5 mt-8 text-sm text-white/85"><span>🚚 توصيل آمن وسريع</span><span>🛡 دفع آمن</span><span>★ تجار حقيقيون</span></div>'+
+    '</div></div>';
+   }
+   const cats=document.getElementById('categories');
+   if(cats){
+    cats.className='ofoq-lock-cats max-w-7xl mx-auto px-2 py-2 my-5';
+    const title=cats.querySelector('.flex.items-end.justify-between');if(title)title.remove();
+    cats.querySelectorAll('button').forEach(b=>{b.classList.remove('lift');const icon=b.querySelector('div');if(icon)icon.classList.add('hidden')});
+   }
+   const products=document.getElementById('products');
+   if(products){
+    products.classList.add('ofoq-lock-products');
+    products.classList.remove('ofoq-v2-products','pb-14');
+    products.classList.add('max-w-7xl','mx-auto','mb-8');
+   }
+   if(!app.querySelector('.ofoq-lock-ai')){
+    const ai=document.createElement('button');ai.className='ofoq-lock-ai';ai.title='مساعد أُفُق';ai.innerHTML='✦';ai.onclick=()=>toast('مساعد أُفُق سيكون متاحًا هنا');
+    app.appendChild(ai);
+   }
+   if(!app.querySelector('.ofoq-lock-bottom')){
+    const nav=document.createElement('nav');nav.className='ofoq-lock-bottom';
+    nav.innerHTML='<button onclick="window.scrollTo({top:0,behavior:\'smooth\'})"><b>⌂</b>الرئيسية</button><button onclick="document.getElementById(\'categories\')?.scrollIntoView({behavior:\'smooth\'})"><b>▦</b>الأقسام</button><button onclick="document.getElementById(\'products\')?.scrollIntoView({behavior:\'smooth\'})"><b>⌕</b>البحث</button><button onclick="showCart()"><b>🛒</b>السلة</button><button onclick="openAccount()"><b>♙</b>حسابي</button>';
+    app.appendChild(nav);
+   }
+  },160);
+  return r;
+ };
+})();
+</script>
