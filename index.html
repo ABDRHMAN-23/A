@@ -1819,4 +1819,150 @@ body{background:#f7f7f5!important}
  if(document.readyState==='complete')revealOfoq();else window.addEventListener('load',revealOfoq,{once:true});
 })();
 </script>
+
+<style id="ofoq-final-ui-lock">
+:root{--of-navy:#0A1E3D;--of-gold:#D4AF37;--of-cream:#F7F7F5;--of-line:#E9EDF2}
+html,body{margin:0;padding:0;min-height:100%;background:var(--of-cream)!important;color:var(--of-navy)!important}
+body{font-family:Cairo,Arial,sans-serif;overflow-x:hidden}
+.ofoq-final-shell{min-height:100vh;background:var(--of-cream)}
+.ofoq-final-header{background:#fff;border-bottom:1px solid var(--of-line);box-shadow:0 6px 28px rgba(10,30,61,.05);position:sticky;top:0;z-index:50}
+.ofoq-final-hero{position:relative;overflow:hidden;border-radius:30px;min-height:470px;background:var(--of-navy);box-shadow:0 20px 50px rgba(10,30,61,.11)}
+.ofoq-final-hero:before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(3,18,41,.96) 0%,rgba(5,30,61,.82) 48%,rgba(5,30,61,.18) 100%);z-index:1}
+.ofoq-final-hero-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.9}
+.ofoq-final-hero-content{position:relative;z-index:2;min-height:470px;display:flex;align-items:center}
+.ofoq-final-logo{object-fit:contain;background:#fff}
+.ofoq-final-pill{border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);backdrop-filter:blur(10px)}
+.ofoq-final-catwrap{background:#fff;border:1px solid var(--of-line);border-radius:22px;box-shadow:0 8px 26px rgba(10,30,61,.045)}
+.ofoq-final-cat{border:1px solid #edf0f4;border-radius:999px;background:#fff;color:#40506a;white-space:nowrap}
+.ofoq-final-cat.active{background:var(--of-gold);color:var(--of-navy);border-color:var(--of-gold)}
+.ofoq-final-products{background:#fff;border:1px solid var(--of-line);border-radius:28px;box-shadow:0 8px 28px rgba(10,30,61,.045)}
+.ofoq-final-service{background:#fff;border:1px solid var(--of-line);border-radius:20px}
+.ofoq-final-bottom{display:none}
+.ofoq-final-art{display:grid;grid-template-columns:1.25fr .75fr;gap:12px;align-items:stretch}
+.ofoq-final-art-main,.ofoq-final-art-side{position:relative;overflow:hidden;border-radius:24px;background:#dfe7ef;min-height:300px}
+.ofoq-final-art-side{min-height:140px}
+.ofoq-final-art img{width:100%;height:100%;object-fit:cover;display:block}
+.ofoq-final-art-label{position:absolute;right:14px;bottom:14px;left:14px;background:rgba(255,255,255,.92);border-radius:14px;padding:10px 12px;font-size:12px;font-weight:800;color:var(--of-navy);backdrop-filter:blur(10px)}
+@media(max-width:767px){
+ .ofoq-final-hero{min-height:620px;border-radius:24px}
+ .ofoq-final-hero-content{min-height:620px;align-items:flex-end}
+ .ofoq-final-art{grid-template-columns:1fr 1fr}
+ .ofoq-final-art-main,.ofoq-final-art-side{min-height:110px}
+ .ofoq-final-art-main{grid-row:span 2}
+ .ofoq-final-bottom{display:grid;position:fixed;left:10px;right:10px;bottom:10px;z-index:80;background:rgba(255,255,255,.97);backdrop-filter:blur(18px);border:1px solid #e6ebf1;border-radius:22px;grid-template-columns:repeat(5,1fr);padding:8px 4px;box-shadow:0 16px 36px rgba(10,30,61,.16)}
+ .ofoq-final-bottom button{font-size:10px;font-weight:800;color:#657188;padding:4px 2px}
+ .ofoq-final-bottom b{display:block;font-size:18px;line-height:20px;color:var(--of-navy);margin-bottom:3px}
+}
+</style>
+<script id="ofoq-final-ui">
+(function(){
+  function exactBrand(){
+    const splash=document.getElementById('splash');
+    let src='';
+    for(const sc of document.scripts){
+      const t=sc.textContent||'';
+      const m=t.match(/const suppliedHero='(data:image\\/jpeg;base64,[^']+)'/);
+      if(m){src=m[1];break}
+    }
+    const box=document.getElementById('splashLogo');
+    if(src && box) box.innerHTML='<img class="ofoq-final-logo" src="'+src+'" alt="أُفُق — من جدة إلى اليمن .. خيارات بلا حدود">';
+    return src;
+  }
+  const brand=exactBrand();
+
+  window.render=async function(){
+    const app=document.getElementById('app'); if(!app)return;
+    app.innerHTML=`
+      <div class="ofoq-final-shell">
+        <header class="ofoq-final-header">
+          <div class="max-w-7xl mx-auto px-4">
+            <div class="min-h-[82px] flex items-center gap-3 md:gap-6 flex-wrap py-3">
+              <a href="#home" class="shrink-0 flex items-center gap-3">
+                <img src="${brand||''}" class="w-14 h-14 rounded-2xl" alt="أُفُق">
+                <div class="hidden sm:block"><div class="text-2xl font-extrabold leading-none">أُفُق</div><div class="text-[9px] font-bold tracking-[.35em] text-[#D4AF37] mt-1 text-center">O F O Q</div></div>
+              </a>
+              <nav class="hidden lg:flex items-center gap-5 text-sm font-bold">
+                <a href="#home">الرئيسية</a><a href="#categories">الأقسام</a><a href="#products">المنتجات</a><a href="#stores">المتاجر</a><a href="#how">كيف يعمل</a>
+              </nav>
+              <div class="flex-1 min-w-[220px] relative order-last lg:order-none">
+                <input oninput="query=this.value;filter()" value="${(window.query||'').replace(/"/g,'&quot;')}" class="w-full h-12 rounded-full bg-[#F5F6F8] border border-[#E9EDF2] pr-5 pl-12 outline-none text-[#0A1E3D]" placeholder="ابحث عن منتج أو متجر...">
+                <span class="absolute left-4 top-3 text-xl text-slate-400">⌕</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="openFavorites()" class="w-11 h-11 rounded-xl hover:bg-slate-50">♡</button>
+                <button onclick="showCart()" class="relative w-11 h-11 rounded-xl hover:bg-slate-50">🛒<span id="cartCount" class="absolute -top-1 -left-1 bg-[#D4AF37] text-[#0A1E3D] text-[10px] w-5 h-5 rounded-full grid place-items-center">${cart.length}</span></button>
+                <button onclick="openAccount()" class="w-11 h-11 rounded-xl hover:bg-slate-50">♙</button>
+              </div>
+            </div>
+          </div>
+        </header>
+        <main id="home">
+          <section class="max-w-7xl mx-auto px-4 pt-6 md:pt-8">
+            <div class="ofoq-final-hero">
+              <img class="ofoq-final-hero-bg" src="https://images.unsplash.com/photo-1539650116574-75c0c6d73f6e?auto=format&fit=crop&w=2200&q=90" alt="">
+              <div class="ofoq-final-hero-content px-6 py-10 md:px-12 md:py-12">
+                <div class="grid lg:grid-cols-2 gap-10 items-center w-full">
+                  <div class="max-w-2xl text-white">
+                    <span class="ofoq-final-pill inline-flex px-4 py-2 rounded-full text-sm font-bold">من جدة إلى اليمن · خيارات بلا حدود</span>
+                    <h1 class="text-4xl md:text-6xl font-extrabold leading-[1.12] mt-5">اكتشف منتجات <span class="text-[#D4AF37]">جدة</span><br>ووصّلها إلى بابك في <span class="text-[#D4AF37]">اليمن</span></h1>
+                    <p class="mt-5 text-white/82 text-base md:text-lg leading-8 max-w-xl">تسوّق منتجات جديدة وشبه جديدة ومستعملة من تجار حقيقيين في جدة، مع تجربة واضحة من الاختيار حتى وصول الطلب إلى اليمن.</p>
+                    <div class="flex flex-wrap gap-3 mt-7"><a href="#products" class="bg-[#D4AF37] text-[#0A1E3D] px-7 py-3.5 rounded-2xl font-extrabold shadow-lg">تسوّق الآن ←</a><a href="#categories" class="border border-white/35 bg-white/10 text-white px-7 py-3.5 rounded-2xl font-bold">استكشف الأقسام</a></div>
+                    <div class="grid grid-cols-3 gap-2 mt-8 max-w-lg text-xs md:text-sm"><div class="bg-white/10 rounded-2xl p-3 text-center">🚚<b class="block mt-1">شحن واضح</b></div><div class="bg-white/10 rounded-2xl p-3 text-center">🛡️<b class="block mt-1">دفع آمن</b></div><div class="bg-white/10 rounded-2xl p-3 text-center">★<b class="block mt-1">تجار حقيقيون</b></div></div>
+                  </div>
+                  <div class="ofoq-final-art hidden md:grid">
+                    <div class="ofoq-final-art-main"><img src="https://images.unsplash.com/photo-1518684079-3c830dcef090?auto=format&fit=crop&w=1200&q=88" alt="جدة"><div class="ofoq-final-art-label">منتجات وفرص من جدة</div></div>
+                    <div class="ofoq-final-art-side"><img src="https://images.unsplash.com/photo-1548013146-72479768bada?auto=format&fit=crop&w=900&q=88" alt="اليمن"><div class="ofoq-final-art-label">إلى اليمن</div></div>
+                    <div class="ofoq-final-art-side"><img src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=900&q=88" alt="منتج"><div class="ofoq-final-art-label">اختيارات متنوعة</div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="categories" class="max-w-7xl mx-auto px-4 py-6 md:py-8">
+            <div class="ofoq-final-catwrap p-2 overflow-x-auto hide-scroll"><div class="flex gap-2 min-w-max">
+              ${cats.map((c,i)=>`<button onclick="query='${c[1]}';filter()" class="ofoq-final-cat ${i===0?'active':''} px-5 py-3 font-bold text-sm">${c[0]} ${c[1]}</button>`).join('')}
+            </div></div>
+          </section>
+          <section id="products" class="max-w-7xl mx-auto px-4 pb-8">
+            <div class="ofoq-final-products p-4 md:p-6">
+              <div class="flex flex-wrap items-end justify-between gap-3 mb-5"><div><p class="text-[#D4AF37] font-bold text-sm">مختارات أُفُق</p><h2 class="text-2xl md:text-3xl font-extrabold mt-1">منتجات تستحق الاكتشاف</h2></div><button onclick="openProductFilters()" class="border border-slate-200 bg-white px-4 py-2.5 rounded-xl text-sm font-bold">⚙ الفلاتر</button></div>
+              <div id="grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">${products.map(p=>card(p)).join('')}</div>
+            </div>
+          </section>
+          <section class="max-w-7xl mx-auto px-4 pb-10"><div class="grid md:grid-cols-3 gap-3">
+            <div class="ofoq-final-service p-4"><div class="text-2xl">🚚</div><b class="block mt-2">من جدة إلى اليمن</b><span class="text-xs text-slate-400">تحديثات واضحة للطلب والشحن</span></div>
+            <div class="ofoq-final-service p-4"><div class="text-2xl">🛡️</div><b class="block mt-2">شراء عبر أُفُق</b><span class="text-xs text-slate-400">تفاصيل مالية واضحة وحماية للطلب</span></div>
+            <div class="ofoq-final-service p-4"><div class="text-2xl">✦</div><b class="block mt-2">جديد · شبه جديد · مستعمل</b><span class="text-xs text-slate-400">خيارات من تجار ومنتجات حقيقية</span></div>
+          </div></section>
+          <section id="how" class="bg-white border-y border-slate-100"><div class="max-w-7xl mx-auto px-4 py-12 md:py-16">
+            <div class="text-center"><p class="text-[#D4AF37] font-bold text-sm">كيف تعمل أُفُق؟</p><h2 class="text-3xl font-extrabold mt-1">من الاختيار إلى الوصول</h2></div>
+            <div class="grid md:grid-cols-4 gap-4 mt-9">
+              ${[['01','اختر','تصفح المنتجات والبائعين في جدة.'],['02','أضف للسلة','اجمع مشترياتك حتى من متاجر مختلفة.'],['03','ادفع لأُفُق','نحسب المنتج والشحن والخدمات بوضوح.'],['04','تتبع','تابع حالة الطلب حتى وصوله إلى اليمن.']].map(x=>`<div class="rounded-3xl bg-[#F7F7F5] border border-[#E9EDF2] p-6"><span class="text-[#D4AF37] font-extrabold">${x[0]}</span><h3 class="font-extrabold text-lg mt-4">${x[1]}</h3><p class="text-slate-500 text-sm leading-7 mt-2">${x[2]}</p></div>`).join('')}
+            </div>
+          </div></section>
+          <section id="stores" class="max-w-7xl mx-auto px-4 py-10"><div class="bg-[#0A1E3D] text-white rounded-3xl p-7 md:p-10 flex flex-col md:flex-row items-center justify-between gap-5">
+            <div><p class="text-[#D4AF37] font-bold text-sm">للبائعين في جدة</p><h2 class="text-2xl md:text-3xl font-extrabold mt-1">اعرض منتجاتك أمام عملاء اليمن</h2><p class="text-white/70 mt-2 text-sm md:text-base">أُفُق تربط العرض والطلب بين جدة واليمن ضمن تجربة منظمة.</p></div>
+            <button onclick="openSellerDashboard()" class="bg-[#D4AF37] text-[#0A1E3D] px-6 py-3 rounded-2xl font-extrabold whitespace-nowrap">مركز البائع</button>
+          </div></section>
+        </main>
+        <footer class="bg-[#0A1E3D] text-white mt-2"><div class="max-w-7xl mx-auto px-4 py-10 flex flex-col md:flex-row justify-between gap-6">
+          <div class="flex items-center gap-3"><img src="${brand||''}" class="w-12 h-12 rounded-xl bg-white" alt="أُفُق"><div><div class="text-xl font-extrabold">أُفُق</div><div class="text-xs text-white/55 mt-1">من جدة إلى اليمن .. خيارات بلا حدود</div></div></div>
+          <div class="text-white/45 text-sm">© 2026 OFOQ. جميع الحقوق محفوظة.</div>
+        </div></footer>
+        <div id="modal"></div>
+        <nav class="ofoq-final-bottom"><button onclick="window.scrollTo({top:0,behavior:'smooth'})"><b>⌂</b>الرئيسية</button><button onclick="document.getElementById('categories')?.scrollIntoView({behavior:'smooth'})"><b>▦</b>الأقسام</button><button onclick="document.getElementById('products')?.scrollIntoView({behavior:'smooth'})"><b>⌕</b>البحث</button><button onclick="showCart()"><b>🛒</b>السلة</button><button onclick="openAccount()"><b>♙</b>حسابي</button></nav>
+      </div>`;
+    loadProducts();
+    updateCount();
+  };
+
+  window.addEventListener('load',()=>{
+    exactBrand();
+    const splash=document.getElementById('splash');
+    if(splash) setTimeout(()=>splash.classList.add('hide'),1700);
+    window.render();
+  },{once:true});
+})();
+</script>
+
 </body></html>
