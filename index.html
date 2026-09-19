@@ -895,3 +895,33 @@ window.openSellerDashboard=async function(){
  setTimeout(()=>{const host=document.querySelector('#modal .bg-cream');if(!host||host.querySelector('#sellerOperationsPanel'))return;const p=document.createElement('div');p.id='sellerOperationsPanel';p.className='mt-6';host.querySelector('.max-w-6xl')?.appendChild(p);ofoqSellerOperations();},250);
 };
 </script>
+<script>
+/* OFOQ phase 23: secure seller product editing */
+window.ofoqEditOwnProduct=async function(id){
+ const q=await db.from('ofoq_products').select('*').eq('id',id).single(); if(q.error){toast(q.error.message);return}
+ const p=q.data;
+ const name=prompt('اسم المنتج',p.name_ar||''); if(name===null)return;
+ const price=prompt('السعر بالريال',p.price); if(price===null)return;
+ const stock=prompt('الكمية المتاحة',p.stock); if(stock===null)return;
+ const condition=prompt('الحالة: new / nearly_new / used',p.condition||'used'); if(condition===null)return;
+ const details=prompt('تفاصيل الحالة',p.condition_details||''); if(details===null)return;
+ const en=prompt('الاسم بالإنجليزية',p.name_en||''); if(en===null)return;
+ const desc=prompt('الوصف',p.description_ar||''); if(desc===null)return;
+ const r=await db.rpc('ofoq_seller_update_product',{p_product_id:id,p_name_ar:name,p_name_en:en,p_description_ar:desc,p_description_en:p.description_en||'',p_price:Number(price),p_stock:Number(stock),p_condition:condition,p_condition_details:details,p_images:p.images||null});
+ if(r.error){toast(r.error.message);return}
+ toast('تم تحديث المنتج');openSellerDashboard();
+};
+const OFOQ_prevSellerDash4=window.openSellerDashboard;
+window.openSellerDashboard=async function(){
+ await OFOQ_prevSellerDash4();
+ setTimeout(()=>{
+  const root=document.querySelector('#modal .max-w-6xl');if(!root)return;
+  const cards=root.querySelectorAll('.border.rounded-2xl');
+  cards.forEach(card=>{
+   if(card.querySelector('.ofoq-edit-product-btn'))return;
+   const id=card.getAttribute('data-product-id'); if(!id)return;
+   const b=document.createElement('button');b.className='ofoq-edit-product-btn mt-2 w-full rounded-xl border py-2 text-sm font-bold';b.textContent='تعديل المنتج';b.onclick=()=>ofoqEditOwnProduct(id);card.appendChild(b);
+  });
+ },350);
+};
+</script>
