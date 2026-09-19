@@ -763,3 +763,40 @@ async function ofoqAdminLifecycle(orderId,action){
  if(typeof loadAdminFinancial==='function')await loadAdminFinancial();
 }
 </script>
+<script>
+/* OFOQ phase 18: guarded order lifecycle controls */
+async function ofoqAdminOrderControl(id,action){
+ const labels={confirm_payment:'تأكيد الطلب',cancel:'إلغاء الطلب',mark_delivered:'تسجيل التسليم'};
+ if(!labels[action])return;
+ if(!confirm('هل تريد '+labels[action]+'؟'))return;
+ const r=await db.rpc('ofoq_admin_order_control',{p_order_id:id,p_action:action});
+ if(r.error){toast(r.error.message);return}
+ toast('تم '+labels[action]+' بنجاح');
+ if(typeof loadAdminOrders==='function') await loadAdminOrders();
+ if(typeof loadAdminFinancial==='function') await loadAdminFinancial();
+}
+async function ofoqAdminLifecycleButtons(id){
+ const r=await db.from('ofoq_orders').select('id,status,payment_status,settled_at').eq('id',id).maybeSingle();
+ if(r.error||!r.data)return '';
+ const o=r.data,b=[];
+ if(o.payment_status==='paid'&&o.status==='pending')b.push('<button onclick="ofoqAdminOrderControl(\''+id+'\',\'confirm_payment\')" class="px-3 py-2 rounded-xl bg-gold text-white text-xs font-bold">تأكيد الطلب</button>');
+ if(!['cancelled','delivered'].includes(o.status)&&!o.settled_at)b.push('<button onclick="ofoqAdminOrderControl(\''+id+'\',\'cancel\')" class="px-3 py-2 rounded-xl border text-xs font-bold">إلغاء</button>');
+ if(o.payment_status==='paid'&&o.status!=='cancelled'&&o.status!=='delivered')b.push('<button onclick="ofoqAdminOrderControl(\''+id+'\',\'mark_delivered\')" class="px-3 py-2 rounded-xl bg-navy text-white text-xs font-bold">تسجيل التسليم</button>');
+ return b.join('');
+}
+const OFOQ_prevAdminOrderDetails2=adminOrderDetails;
+adminOrderDetails=async function(id){
+ await OFOQ_prevAdminOrderDetails2(id);
+ const host=document.querySelector('[data-ofoq-lifecycle]');
+ if(host){host.innerHTML=await ofoqAdminLifecycleButtons(id);return}
+ const modal=document.getElementById('modal');
+ if(modal){
+  const box=modal.querySelector('.bg-white');
+  if(box&&!box.querySelector('.ofoq-lifecycle-fallback')){
+   const d=document.createElement('div');d.className='ofoq-lifecycle-fallback mt-4 pt-4 border-t';
+   d.innerHTML='<div class="text-sm font-bold mb-2">إجراءات دورة الطلب</div><div class="flex flex-wrap gap-2" data-ofoq-lifecycle></div>';
+   box.appendChild(d);d.querySelector('[data-ofoq-lifecycle]').innerHTML=await ofoqAdminLifecycleButtons(id);
+  }
+ }
+};
+</script>
