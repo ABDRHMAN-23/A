@@ -948,3 +948,83 @@ window.ofoqEnhanceSellerProductForm=function(){
 };
 setTimeout(ofoqEnhanceSellerProductForm,500);
 </script>
+<script>
+/* OFOQ phase 25: fully wire multi-image seller product management */
+window.ofoqSellerSelectedImages=[];
+window.ofoqRenderImagePreview=function(){
+ const host=document.getElementById('spImagePreview'); if(!host)return;
+ host.innerHTML=window.ofoqSellerSelectedImages.map((u,i)=>'<div class="relative w-20 h-20 rounded-xl overflow-hidden border bg-slate-100"><img src="'+esc(u)+'" class="w-full h-full object-cover"><button type="button" onclick="window.ofoqRemoveImage('+i+')" class="absolute top-1 left-1 w-6 h-6 rounded-full bg-black/70 text-white text-xs">×</button></div>').join('');
+};
+window.ofoqRemoveImage=function(i){window.ofoqSellerSelectedImages.splice(i,1);ofoqRenderImagePreview();};
+window.ofoqPrepareSellerImages=function(){
+ const input=document.getElementById('spImage'); if(!input)return;
+ input.multiple=true; input.accept='image/jpeg,image/png,image/webp';
+ let host=document.getElementById('spImagePreview');
+ if(!host){host=document.createElement('div');host.id='spImagePreview';host.className='flex flex-wrap gap-2 mt-3';input.insertAdjacentElement('afterend',host);}
+ input.onchange=function(){
+   const files=[...input.files||[]];
+   if(window.ofoqSellerSelectedImages.length+files.length>8){toast('الحد الأقصى 8 صور للمنتج');input.value='';return;}
+   const bad=files.find(f=>!/^image\/(jpeg|png|webp)$/.test(f.type)||f.size>5*1024*1024);
+   if(bad){toast('كل صورة يجب أن تكون JPG أو PNG أو WEBP وأقل من 5MB');input.value='';return;}
+   window.ofoqSellerPendingFiles=files;
+   const previews=files.map(f=>URL.createObjectURL(f));
+   previews.forEach(u=>window.ofoqSellerSelectedImages.push(u));
+   ofoqRenderImagePreview();
+ };
+};
+const OFOQ_oldResetSellerProductForm=window.resetSellerProductForm;
+window.resetSellerProductForm=function(){
+ window.ofoqSellerSelectedImages=[];window.ofoqSellerPendingFiles=[];
+ if(typeof OFOQ_oldResetSellerProductForm==='function')OFOQ_oldResetSellerProductForm();
+ ofoqRenderImagePreview();
+};
+const OFOQ_oldEditSellerProduct=window.editSellerProduct;
+window.editSellerProduct=function(p){
+ window.ofoqSellerSelectedImages=[...(p.images||[])];window.ofoqSellerPendingFiles=[];
+ if(typeof OFOQ_oldEditSellerProduct==='function')OFOQ_oldEditSellerProduct(p);
+ setTimeout(ofoqRenderImagePreview,0);
+};
+window.saveSellerProduct=async function(e,sellerId){
+ e.preventDefault();
+ const msg=document.getElementById('spMsg'); if(!msg)return;
+ msg.textContent='جاري رفع الصور وحفظ المنتج...';
+ const id=document.getElementById('spId').value.trim();
+ const files=window.ofoqSellerPendingFiles||[];
+ if(window.ofoqSellerSelectedImages.length>8){msg.textContent='الحد الأقصى 8 صور.';return;}
+ const uploaded=[];
+ for(const f of files){
+   const ext=(f.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg';
+   const path=sellerId+'/'+crypto.randomUUID()+'.'+ext;
+   const up=await db.storage.from('ofoq-products').upload(path,f,{upsert:false,contentType:f.type});
+   if(up.error){msg.textContent=up.error.message;return;}
+   uploaded.push(db.storage.from('ofoq-products').getPublicUrl(path).data.publicUrl);
+ }
+ const existing=(window.ofoqSellerSelectedImages||[]).filter(u=>/^https?:\/\//i.test(u));
+ const images=[...existing,...uploaded].slice(0,8);
+ const payload={
+   name_ar:document.getElementById('spName').value.trim(),
+   name_en:document.getElementById('spNameEn').value.trim()||null,
+   price:Number(document.getElementById('spPrice').value),
+   stock:Number(document.getElementById('spStock').value||0),
+   category_id:document.getElementById('spCat').value||null,
+   condition:document.getElementById('spCondition').value,
+   description:document.getElementById('spDesc').value.trim()||null
+ };
+ if(!payload.name_ar||!Number.isFinite(payload.price)||payload.price<0||!Number.isInteger(payload.stock)||payload.stock<0){msg.textContent='تحقق من اسم المنتج والسعر والمخزون.';return;}
+ let r;
+ if(id){
+   r=await db.rpc('ofoq_seller_update_product',{
+     p_product_id:id,p_name_ar:payload.name_ar,p_name_en:payload.name_en,
+     p_description_ar:payload.description,p_description_en:null,p_price:payload.price,
+     p_stock:payload.stock,p_condition:payload.condition,p_condition_details:null,
+     p_images:images.length?images:null
+   });
+ }else{
+   r=await db.from('ofoq_products').insert({...payload,seller_id:sellerId,images});
+ }
+ if(r.error){msg.textContent=r.error.message;return;}
+ toast(id?'تم تحديث المنتج والصور':'تم إضافة المنتج وإرساله للمراجعة');
+ sellerProducts();
+};
+setTimeout(ofoqPrepareSellerImages,600);
+</script>
