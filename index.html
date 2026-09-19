@@ -1474,3 +1474,23 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)ofoqRefres
  };
 })();
 </script>
+
+<script>
+/* OFOQ phase 12: notification center polish + safe live refresh */
+(function(){
+ const oldRender12=window.render;
+ window.render=async function(){
+   const r=await oldRender12();
+   try{ if(window.ofoqRefreshNotificationBadge) await window.ofoqRefreshNotificationBadge(); }catch(e){}
+   return r;
+ };
+ if(window.ofoqRefreshNotificationBadge) window.ofoqRefreshNotificationBadge();
+ window.ofoqNotificationToast=function(title,body){
+   const old=document.getElementById('ofoqLiveNotice');if(old)old.remove();
+   const el=document.createElement('button');el.id='ofoqLiveNotice';el.onclick=()=>window.openNotifications&&window.openNotifications();
+   el.className='fixed top-4 left-4 right-4 md:left-auto md:right-5 md:w-96 z-[200] bg-navy text-white rounded-2xl p-4 shadow-2xl text-right';
+   el.innerHTML='<div class="flex justify-between gap-3"><b>'+esc(title||'إشعار جديد')+'</b><span>🔔</span></div><div class="text-sm text-slate-200 mt-1">'+esc(body||'لديك تحديث جديد في أُفُق.')+'</div>';
+   document.body.appendChild(el);setTimeout(()=>el.remove(),6000);
+ };
+})();
+</script>
