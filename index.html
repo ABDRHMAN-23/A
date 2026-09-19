@@ -751,3 +751,15 @@ async function saveOfoqTransportDetails(id){
 const OFOQ_prevActions2=ofoqAdminActions;
 ofoqAdminActions=function(){OFOQ_prevActions2();const el=document.getElementById('ofoqAdminActions');if(el&&!el.querySelector('.ofoq-logistics-action'))el.insertAdjacentHTML('beforeend','<button class="ofoq-logistics-action p-4 rounded-2xl bg-white border border-slate-100 text-right hover:shadow-md transition" onclick="openOfoqTransportCenter()"><span class="text-xl">🚚</span><div class="font-bold mt-2">مركز النقل</div><div class="text-xs text-slate-400 mt-1">جدة → عدن</div></button>')};
 </script>
+<script>
+/* OFOQ phase 18: lifecycle controls */
+async function ofoqAdminLifecycle(orderId,action){
+ const labels={confirm_payment:'تأكيد الطلب بعد اعتماد الدفع',cancel:'إلغاء الطلب',mark_delivered:'تسجيل التسليم'};
+ if(!confirm(labels[action]+'؟'))return;
+ const r=await db.rpc('ofoq_admin_order_control',{p_order_id:orderId,p_action:action});
+ if(r.error){toast(r.error.message);return}
+ toast(action==='cancel'?'تم إلغاء الطلب':action==='mark_delivered'?'تم تسجيل التسليم':'تم تأكيد الطلب');
+ if(typeof loadAdminOrders==='function')await loadAdminOrders();
+ if(typeof loadAdminFinancial==='function')await loadAdminFinancial();
+}
+</script>
