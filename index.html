@@ -634,4 +634,27 @@ loadAdminOrders=async function(){
  const rows=document.querySelectorAll('[data-shipment-id]');
  rows.forEach(row=>{if(!row.querySelector('.ofoq-track-btn')){const id=row.dataset.shipmentId;const b=document.createElement('button');b.className='ofoq-track-btn px-3 py-2 rounded-xl bg-slate-100 text-xs font-bold';b.textContent='تحديث النقل';b.onclick=()=>adminUpdateTransportStatus(id);row.appendChild(b)}});
 };
+</script><script>
+/* OFOQ phase 15: financial center */
+async function loadSellerFinancialCenter(){
+ const {data,error}=await db.rpc('ofoq_seller_financial_summary');
+ if(error||!data)return;
+ const el=document.getElementById('sellerFinancialCenter');if(!el)return;
+ el.innerHTML='<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">'+[
+ ['الرصيد المتاح',data.balance_sar],
+ ['قيد التسوية',data.pending_sar],
+ ['إجمالي الأرباح',data.total_earned_sar],
+ ['المبيعات المدفوعة',data.paid_sales]
+ ].map(x=>'<div class="p-4 rounded-2xl bg-white border border-slate-100"><div class="text-xs text-slate-500">'+x[0]+'</div><div class="text-xl font-extrabold mt-1">'+Number(x[1]||0).toFixed(2)+' SAR</div></div>').join('')+'</div>';
+}
+const OFOQ_oldSellerDashFinancial=window.openSellerDashboard;
+window.openSellerDashboard=async function(){
+ await OFOQ_oldSellerDashFinancial();
+ setTimeout(loadSellerFinancialCenter,100);
+};
+async function openAdminFinancialBreakdown(){
+ const {data,error}=await db.from('ofoq_admin_financial_breakdown').select('*').order('created_at',{ascending:false}).limit(100);
+ if(error){toast(error.message);return}
+ document.getElementById('modal').innerHTML='<div class="fixed inset-0 z-[80] bg-black/50 flex items-center justify-center p-4"><div class="bg-white rounded-[30px] p-6 w-full max-w-5xl max-h-[90vh] overflow-auto"><div class="flex justify-between items-center"><h2 class="text-2xl font-extrabold">التفصيل المالي</h2><button onclick="openAdminDashboard()">✕</button></div><div class="overflow-x-auto mt-5"><table class="w-full text-sm"><thead><tr class="border-b"><th class="p-3 text-right">الطلب</th><th class="p-3">الحالة</th><th class="p-3">الإجمالي</th><th class="p-3">البائعون</th><th class="p-3">عمولة OFOQ</th><th class="p-3">الشحن</th></tr></thead><tbody>'+data.map(x=>'<tr class="border-b"><td class="p-3 font-mono">'+x.order_id.slice(0,8)+'</td><td class="p-3">'+esc(x.payment_status||'')+'</td><td class="p-3">'+Number(x.total_sar||0).toFixed(2)+'</td><td class="p-3">'+Number(x.seller_total||0).toFixed(2)+'</td><td class="p-3">'+Number(x.platform_commission||0).toFixed(2)+'</td><td class="p-3">'+Number(x.shipping_sar||0).toFixed(2)+'</td></tr>').join('')+'</tbody></table></div></div></div>';
+}
 </script>
