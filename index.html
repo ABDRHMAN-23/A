@@ -872,3 +872,26 @@ window.adminOrderDetails=async function(id){
  await ofoqAdminMultiSellerPanel(id);
 };
 </script>
+<script>
+/* OFOQ phase 22: seller operations center */
+window.ofoqSellerOperations=async function(){
+ const {data:{user}}=await db.auth.getUser(); if(!user)return;
+ const s=await db.from('ofoq_sellers').select('id,store_name,status,commission_percent').eq('user_id',user.id).maybeSingle();
+ if(!s.data)return;
+ const sid=s.data.id;
+ const [f,items,products]=await Promise.all([
+  db.from('ofoq_order_seller_fulfillments').select('order_id,status,updated_at').eq('seller_id',sid).order('updated_at',{ascending:false}).limit(50),
+  db.from('ofoq_order_items').select('order_id,product_name,quantity,seller_amount_sar').eq('seller_id',sid).order('created_at',{ascending:false}).limit(50),
+  db.from('ofoq_products').select('id,name_ar,price,stock,is_active,moderation_note').eq('seller_id',sid).order('created_at',{ascending:false})
+ ]);
+ const fs=f.data||[], its=items.data||[], ps=products.data||[];
+ const counts={pending:0,confirmed:0,preparing:0,ready:0};fs.forEach(x=>{if(counts[x.status]!==undefined)counts[x.status]++});
+ const host=document.getElementById('sellerOperationsPanel');if(!host)return;
+ host.innerHTML='<div class="grid grid-cols-2 md:grid-cols-4 gap-3">'+Object.entries({pending:'بانتظار التأكيد',confirmed:'مؤكد',preparing:'قيد التجهيز',ready:'جاهز للشحن'}).map(([k,v])=>'<div class="rounded-2xl border p-4 bg-white"><div class="text-xs text-slate-400">'+v+'</div><div class="text-2xl font-extrabold mt-1">'+counts[k]+'</div></div>').join('')+'</div><div class="mt-5 rounded-3xl bg-white border p-5"><h3 class="font-extrabold">آخر عمليات متجرك</h3><div class="mt-3 space-y-2">'+fs.slice(0,10).map(x=>'<button onclick="sellerOrderFulfillment(\''+x.order_id+'\')" class="w-full text-right p-3 rounded-2xl bg-slate-50 flex justify-between"><span>#'+x.order_id.slice(0,8).toUpperCase()+'</span><b>'+esc(fulfillmentLabel(x.status))+'</b></button>').join('')+'</div></div><div class="mt-5 rounded-3xl bg-white border p-5"><h3 class="font-extrabold">حالة منتجاتك</h3><div class="mt-3 space-y-2">'+ps.slice(0,10).map(x=>'<div class="flex justify-between gap-3 p-3 rounded-2xl bg-slate-50"><span class="truncate">'+esc(x.name_ar)+'</span><span class="text-xs font-bold">'+(x.is_active?'منشور':'قيد المراجعة')+(x.moderation_note?' • '+esc(x.moderation_note):'')+'</span></div>').join('')+'</div></div>';
+};
+const OFOQ_prevSellerDashFinal=window.openSellerDashboard;
+window.openSellerDashboard=async function(){
+ await OFOQ_prevSellerDashFinal();
+ setTimeout(()=>{const host=document.querySelector('#modal .bg-cream');if(!host||host.querySelector('#sellerOperationsPanel'))return;const p=document.createElement('div');p.id='sellerOperationsPanel';p.className='mt-6';host.querySelector('.max-w-6xl')?.appendChild(p);ofoqSellerOperations();},250);
+};
+</script>
