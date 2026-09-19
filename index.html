@@ -844,3 +844,31 @@ window.saveShipment=async function(id){
  toast('تم حفظ بيانات الشحنة'); if(typeof loadOfoqTransportCenter==='function') loadOfoqTransportCenter();
 };
 </script>
+<script>
+/* OFOQ phase 21: unified multi-seller order control center */
+window.ofoqAdminMultiSellerPanel=async function(orderId){
+ const host=document.querySelector('#modal .bg-white'); if(!host)return;
+ let box=host.querySelector('#ofoqMultiSellerPanel');
+ if(!box){box=document.createElement('div');box.id='ofoqMultiSellerPanel';box.className='mt-5 border border-slate-100 rounded-3xl p-4';host.appendChild(box)}
+ box.innerHTML='<div class="font-extrabold">تفصيل الطلب حسب البائع</div><div class="text-xs text-slate-400 mt-1">كل بائع يجهز حصته بشكل مستقل، ولا يبدأ النقل حتى تكتمل الجاهزية.</div><div class="mt-4 text-sm">جاري التحميل...</div>';
+ const [f,s,it]=await Promise.all([
+  db.from('ofoq_order_seller_fulfillments').select('*').eq('order_id',orderId),
+  db.from('ofoq_sellers').select('id,store_name,name').order('created_at',{ascending:false}),
+  db.from('ofoq_order_items').select('seller_id,product_name,quantity,seller_amount_sar,platform_commission_sar').eq('order_id',orderId)
+ ]);
+ if(f.error||s.error||it.error){box.innerHTML+='<div class="text-red-600 mt-3">'+esc((f.error||s.error||it.error)?.message||'تعذر تحميل البيانات')+'</div>';return}
+ const sellers=Object.fromEntries((s.data||[]).map(x=>[x.id,x]));
+ const rows=(f.data||[]).map(x=>{
+  const ss=sellers[x.seller_id]||{};
+  const items=(it.data||[]).filter(y=>y.seller_id===x.seller_id);
+  const amount=items.reduce((a,y)=>a+Number(y.seller_amount_sar||0),0);
+  return '<div class="rounded-2xl bg-slate-50 p-4 mt-3"><div class="flex justify-between gap-3"><div><b>'+esc(ss.store_name||ss.name||'بائع')+'</b><div class="text-xs text-slate-500 mt-1">'+items.map(y=>esc(y.product_name)+' × '+y.quantity).join('، ')+'</div></div><span class="px-2 py-1 rounded-lg bg-white text-xs font-bold">'+esc(statusLabel(x.status))+'</span></div><div class="flex justify-between text-xs mt-3 text-slate-500"><span>مستحقات البائع</span><b class="text-navy">'+money(amount)+'</b></div></div>';
+ }).join('');
+ box.innerHTML='<div class="font-extrabold">تفصيل الطلب حسب البائع</div><div class="text-xs text-slate-400 mt-1">كل بائع يجهز حصته بشكل مستقل، ولا يبدأ النقل حتى تكتمل الجاهزية.</div>'+ (rows||'<div class="mt-3 text-sm text-slate-500">لا توجد بيانات بائعين.</div>');
+};
+const OFOQ_finalAdminOrderDetails=window.adminOrderDetails;
+window.adminOrderDetails=async function(id){
+ await OFOQ_finalAdminOrderDetails(id);
+ await ofoqAdminMultiSellerPanel(id);
+};
+</script>
