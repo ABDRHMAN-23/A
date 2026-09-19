@@ -1536,3 +1536,21 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)ofoqRefres
  };
 })();
 </script>
+
+<script>
+/* OFOQ phase 15: premium product trust & purchase panel */
+(function(){
+ const prev=window.openProduct;
+ window.openProduct=async function(id){
+  await prev(id);
+  const p=(window.products||[]).find(x=>x.id===id);if(!p)return;
+  const modal=document.getElementById('modal'),host=modal?.querySelector('.bg-white.rounded-\\[32px\\]');
+  if(!host||host.querySelector('.ofoq-product-trust'))return;
+  const body=host.querySelector('.p-6.md\\:p-8');if(!body)return;
+  const stock=Number(p.stock??p.quantity??0),condition={new:'جديد',nearly_new:'شبه جديد',used:'مستعمل'}[p.condition]||'حالة المنتج';
+  const trust=document.createElement('div');trust.className='ofoq-product-trust mt-5 space-y-3';
+  trust.innerHTML='<div class="grid grid-cols-2 gap-2"><div class="rounded-2xl border border-slate-100 bg-white p-4"><div class="text-xs text-slate-400">حالة المنتج</div><b class="block mt-1">'+esc(condition)+'</b></div><div class="rounded-2xl border border-slate-100 bg-white p-4"><div class="text-xs text-slate-400">التوفر</div><b class="block mt-1 '+(stock>0?'text-emerald-700':'text-rose-600')+'">'+(stock>0?'متوفر'+(stock<10?' · '+stock+' قطع':''):'غير متوفر')+'</b></div></div><div class="rounded-2xl bg-navy text-white p-4"><div class="flex items-center justify-between gap-3"><div><div class="text-gold text-xs font-bold">شراء آمن عبر أُفُق</div><b class="block mt-1">الدفع يتم للمنصة وتظهر تفاصيل الطلب والشحن بوضوح.</b></div><span class="text-2xl">✓</span></div><div class="grid grid-cols-3 gap-2 mt-4 text-center text-xs"><div class="bg-white/10 rounded-xl p-2">بائع موثّق</div><div class="bg-white/10 rounded-xl p-2">تتبع الطلب</div><div class="bg-white/10 rounded-xl p-2">دعم ونزاعات</div></div></div><button onclick="openSellerStore(\''+esc(p.seller_id||'')+'\')" class="w-full rounded-2xl border border-slate-200 bg-white py-3 font-bold text-right">🏪 زيارة متجر البائع ←</button>';
+  body.insertBefore(trust,body.querySelector('.flex.gap-3.mt-6'));
+ };
+})();
+</script>
