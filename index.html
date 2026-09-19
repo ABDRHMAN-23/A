@@ -1554,3 +1554,64 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)ofoqRefres
  };
 })();
 </script>
+
+<style id="ofoq-reference-design">
+:root{--ofoq-navy:#0A1E3D;--ofoq-blue:#0054A6;--ofoq-gold:#D4AF37;--ofoq-cream:#F8F7F3}
+.ofoq-ref-header{background:#fff!important;color:var(--ofoq-navy)!important;box-shadow:0 4px 24px rgba(10,30,61,.06)!important;border-bottom:1px solid #edf0f5}
+.ofoq-ref-header a{color:var(--ofoq-navy)!important}.ofoq-ref-search{background:#f5f7fa!important;border:1px solid #e8ecf2!important}
+.ofoq-ref-hero{position:relative;min-height:455px;border-radius:32px;overflow:hidden;background:var(--ofoq-navy);isolation:isolate}
+.ofoq-ref-hero:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(4,19,43,.88),rgba(8,43,82,.45) 58%,rgba(8,43,82,.15));z-index:1}
+.ofoq-ref-hero img{filter:saturate(1.05) contrast(1.02);opacity:.92}
+.ofoq-ref-content{position:relative;z-index:2;min-height:455px;display:flex;align-items:center}
+.ofoq-ref-pill{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);backdrop-filter:blur(8px)}
+.ofoq-ref-gold{color:var(--ofoq-gold)}
+.ofoq-ref-cat{background:#fff;border:1px solid #edf0f4;border-radius:18px;transition:.2s}.ofoq-ref-cat:hover{transform:translateY(-3px);border-color:#e6d49a;box-shadow:0 10px 30px rgba(10,30,61,.08)}
+.ofoq-ref-section{background:var(--ofoq-cream)}
+.ofoq-ref-card{border-radius:24px!important;box-shadow:0 8px 28px rgba(10,30,61,.06)!important}
+@media(max-width:767px){.ofoq-ref-hero,.ofoq-ref-content{min-height:520px}.ofoq-ref-hero{border-radius:24px}.ofoq-ref-content{align-items:flex-end}.ofoq-ref-search{height:44px!important}.ofoq-ref-title{font-size:2.2rem!important}}
+</style>
+<script>
+/* OFOQ phase 16: reference design system — white/navy/gold premium marketplace */
+(function(){
+ const prevRender16=window.render;
+ window.render=async function(){
+  const r=await prevRender16();
+  setTimeout(()=>{
+   const app=document.getElementById('app');if(!app||app.dataset.ofoqReference==='1')return;
+   app.dataset.ofoqReference='1';
+   const header=app.querySelector('header');
+   if(header){
+    header.className='sticky top-0 z-40 ofoq-ref-header';
+    header.innerHTML='<div class="max-w-7xl mx-auto px-4"><div class="min-h-[78px] flex items-center gap-3 md:gap-6">'+
+      '<button class="md:hidden text-2xl text-navy" onclick="toggleMenu()">☰</button>'+
+      '<a href="#home" class="shrink-0 flex items-center gap-2 no-underline"><img src="/ofoq-icon.svg" class="w-11 h-11 rounded-xl" alt="أُفُق"><div><div class="text-2xl font-extrabold leading-none text-navy">أُفُق</div><div class="text-[8px] tracking-[.32em] font-bold text-gold text-center mt-1">O F O Q</div></div></a>'+
+      '<nav id="menu" class="hidden lg:flex items-center gap-5 text-sm font-bold whitespace-nowrap"><a href="#home">الرئيسية</a><a href="#categories">الأقسام</a><a href="#products">المنتجات</a><a href="#stores">المتاجر</a><a href="#deals">العروض</a></nav>'+
+      '<div class="flex-1 max-w-2xl mx-auto relative order-last lg:order-none"><input oninput="query=this.value;filter()" value="'+(window.query||'')+'" class="ofoq-ref-search w-full text-slate-900 rounded-2xl h-12 pr-5 pl-12 outline-none" placeholder="ماذا تبحث عن؟"><span class="absolute left-4 top-2.5 text-xl text-slate-400">⌕</span></div>'+
+      '<div class="flex items-center gap-2 text-navy"><button onclick="openFavorites()" class="w-10 h-10 rounded-xl hover:bg-slate-50" aria-label="المفضلة">♡</button><button class="relative w-10 h-10 rounded-xl hover:bg-slate-50" onclick="showCart()" aria-label="السلة">🛒<span id="cartCount" class="absolute -top-1 -left-1 bg-gold text-navy text-[10px] w-5 h-5 rounded-full grid place-items-center">'+cart.length+'</span></button><button onclick="openAccount()" class="w-10 h-10 rounded-xl hover:bg-slate-50" aria-label="الحساب">♙</button></div>'+
+      '</div></div>';
+   }
+   const home=document.getElementById('home');
+   if(home){
+    const first=home.querySelector('section');
+    if(first){
+     first.className='max-w-7xl mx-auto px-4 pt-5 md:pt-7';
+     first.innerHTML='<div class="ofoq-ref-hero">'+
+      '<img src="https://images.unsplash.com/photo-1518684079-3c830dcef090?auto=format&fit=crop&w=2000&q=88" class="absolute inset-0 w-full h-full object-cover" alt="أفق جدة واليمن">'+
+      '<div class="ofoq-ref-content px-6 md:px-14 py-12"><div class="max-w-2xl">'+
+      '<span class="ofoq-ref-pill inline-flex items-center px-4 py-2 rounded-full text-sm font-bold text-white">من جدة إلى اليمن • خيارات بلا حدود</span>'+
+      '<h1 class="ofoq-ref-title text-4xl md:text-6xl font-extrabold leading-[1.12] mt-5 text-white">اكتشف منتجات <span class="ofoq-ref-gold">جدة</span><br>ووصّلها إلى بابك في <span class="ofoq-ref-gold">اليمن</span></h1>'+
+      '<p class="mt-5 text-white/80 text-base md:text-lg leading-8 max-w-xl">منتجات جديدة ومستعملة وشبه جديدة من تجار حقيقيين في جدة، بأسعار واضحة وتجربة شراء مصممة لليمن.</p>'+
+      '<div class="flex flex-wrap gap-3 mt-7"><a href="#products" class="bg-gold text-navy px-7 py-3.5 rounded-2xl font-extrabold shadow-lg">تسوّق الآن ←</a><a href="#categories" class="border border-white/40 bg-white/5 text-white px-7 py-3.5 rounded-2xl font-bold backdrop-blur">استكشف التجار</a></div>'+
+      '<div class="flex flex-wrap gap-5 mt-8 text-sm text-white/85"><span>🚚 توصيل آمن وسريع</span><span>🛡 دفع آمن</span><span>★ بائعون ومنتجات حقيقية</span></div>'+
+      '</div></div></div>';
+    }
+    const catsSec=document.getElementById('categories');
+    if(catsSec){catsSec.className='max-w-7xl mx-auto px-4 py-10';const inner=catsSec.querySelector('div');if(inner)inner.className='';}
+    const grid=document.getElementById('grid');if(grid)grid.className='grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6';
+    app.querySelectorAll('#grid article').forEach(x=>x.classList.add('ofoq-ref-card'));
+   }
+  },120);
+  return r;
+ };
+})();
+</script>
