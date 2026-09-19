@@ -397,8 +397,7 @@ async function openCheckout(){
  const {data:{user}}=await db.auth.getUser();if(!user){openAuth();return}
  const [{data:p},{data:a}]=await Promise.all([db.from('ofoq_profiles').select('*').eq('id',user.id).maybeSingle(),db.from('ofoq_addresses').select('*').eq('user_id',user.id).eq('is_default',true).maybeSingle()]);
  const t=cartTotals();
- document.getElementById('modal').innerHTML='<div class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"><div class="bg-white rounded-[30px] p-7 w-full max-w-2xl max-h-[90vh] overflow-auto"><div class="flex justify-between"><h2 class="text-2xl font-extrabold">إتمام الطلب</h2><button onclick="showCart()">✕</button></div><div class="grid md:grid-cols-2 gap-3 mt-6"><input id="coName" value="'+esc(a?.full_name||p?.full_name||'')+'" class="p-4 rounded-2xl bg-slate-50" placeholder="الاسم الكامل *"><input id="coPhone" value="'+esc(a?.phone||p?.phone||'')+'" class="p-4 rounded-2xl bg-slate-50" placeholder="رقم الهاتف *"><input id="coCity" value="'+esc(a?.city||'Aden')+'" class="p-4 rounded-2xl bg-slate-50" placeholder="المدينة"><input id="coDistrict" value="'+esc(a?.district||'')+'" class="p-4 rounded-2xl bg-slate-50" placeholder="المديرية / المنطقة"><input id="coAddress" value="'+esc(a?.address||'')+'" class="p-4 rounded-2xl bg-slate-50 md:col-span-2" placeholder="العنوان بالتفصيل"><select id="coPay" class="p-4 rounded-2xl bg-slate-50 md:col-span-2"><option value="manual_transfer">تحويل بنكي / دفع يدوي — بانتظار مراجعة الإدارة</option></select><textarea id="coNotes" class="p-4 rounded-2xl bg-slate-50 md:col-span-2 h-24" placeholder="ملاحظات الطلب (اختياري)"></textarea></div><div class="mt-5 bg-cream rounded-2xl p-5"><div class="flex justify-between"><span>المنتجات</span><b>'+money(t.subtotal)+'</b></div><div class="flex justify-between mt-2"><span>رسوم الخدمة</span><b>'+money(t.service)+'</b></div><div class="flex justify-between border-t mt-3 pt-3 text-xl"><span>الإجمالي</span><b>'+money(t.total)+'</b></div></div><button onclick="placeOrder()" class="w-full mt-5 bg-navy text-white py-4 rounded-2xl font-bold">تأكيد إنشاء الطلب</button><p id="coMsg" class="text-center text-sm mt-3 text-slate-500"></p></div></div>';
-}
+ document.getElementById('modal').innerHTML='<div class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"><div class="bg-white rounded-[30px] p-7 w-full max-w-2xl max-h-[90vh] overflow-auto"><div class="flex justify-between"><h2 class="text-2xl font-extrabold">إتمام الطلب</h2><button onclick="showCart()">✕</button></div><div class="grid md:grid-cols-2 gap-3 mt-6"><input id="coName" value="'+esc(a?.full_name||p?.full_name||'')+'" class="p-4 rounded-2xl bg-slate-50" placeholder="الاسم الكامل *"><input id="coPhone" value="'+esc(a?.phone||p?.phone||'')+'" class="p-4 rounded-2xl bg-slate-50" placeholder="رقم الهاتف *"><input id="coCity" value="'+esc(a?.city||'Aden')+'" class="p-4 rounded-2xl bg-slate-50" placeholder="المدينة"><input id="coDistrict" value="'+esc(a?.district||'')+'" class="p-4 rounded-2xl bg-slate-50" placeholder="المديرية / المنطقة"><input id="coAddress" value="'+esc(a?.address||'')+'" class="p-4 rounded-2xl bg-slate-50 md:col-span-2" placeholder="العنوان بالتفصيل"><select id="coPay" class="p-4 rounded-2xl bg-slate-50 md:col-span-2"><option value="manual_transfer">تحويل بنكي / دفع يدوي — بانتظار مراجعة الإدارة</option></select><textarea id="coNotes" class="p-4 rounded-2xl bg-slate-50 md:col-span-2 h-24" placeholder="ملاحظات الطلب (اختياري)"></textarea></div><div class="mt-5 bg-cream rounded-2xl p-5"><div class="flex justify-between"><span>المنتجات</span><b>'+money(t.subtotal)+'</b></div><div class="flex justify-between mt-2"><span>رسوم الخدمة</span><b>'+money(t.service)+'</b></div><div class="flex justify-between border-t mt-3 pt-3 text-xl"><span>الإجمالي</span><b>'+money(t.total)+'</b></div></div><button onclick="placeOrder()" class="w-full mt-5 bg-navy text-white py-4 rounded-2xl font-bold">تأكيد إنشاء الطلب</button><p id="coMsg" class="text-center text-sm mt-3 text-slate-500"></p></div></div>';}
 
 /* OFOQ phase 9: professional product filters */
 window.ofoqFilters={category:"",condition:"",min:"",max:""};
@@ -797,8 +796,7 @@ adminOrderDetails=async function(id){
    d.innerHTML='<div class="text-sm font-bold mb-2">إجراءات دورة الطلب</div><div class="flex flex-wrap gap-2" data-ofoq-lifecycle></div>';
    box.appendChild(d);d.querySelector('[data-ofoq-lifecycle]').innerHTML=await ofoqAdminLifecycleButtons(id);
   }
- }
-};
+ }};
 </script>
 <script>
 /* OFOQ phase 19: product moderation hardening + transport entry fallback */
@@ -1082,4 +1080,77 @@ window.openCheckout=async function(){
  const {data:p}=await db.from('ofoq_profiles').select('*').eq('id',user.id).maybeSingle();const groups=ofoqGroupCart();const t=cartTotals();
  document.getElementById('modal').innerHTML='<div class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-3"><div class="bg-cream rounded-[30px] w-full max-w-5xl max-h-[94vh] overflow-auto"><div class="sticky top-0 z-10 bg-cream/95 backdrop-blur p-5 border-b flex justify-between items-center"><div><p class="text-gold text-xs font-bold">OFOQ CHECKOUT</p><h2 class="text-2xl font-extrabold">إتمام الطلب</h2><p class="text-xs text-slate-500 mt-1">طلب واحد · '+groups.length+' بائع · '+cart.length+' منتج</p></div><button onclick="showCart()" class="w-10 h-10 rounded-xl bg-white">✕</button></div><div class="p-5 grid lg:grid-cols-[1.1fr_.9fr] gap-5"><section class="bg-white rounded-3xl p-5"><h3 class="font-extrabold">مراجعة المشتريات</h3><div class="mt-4 space-y-3">'+groups.map(g=>'<div class="border rounded-2xl overflow-hidden"><div class="bg-slate-50 px-4 py-3 font-bold">'+esc(g.seller?.store_name||g.seller?.name||'البائع')+'</div><div class="p-3">'+g.items.map(x=>'<div class="flex justify-between gap-3 py-2 text-sm"><span class="truncate">'+esc(x.name)+' × '+(x.quantity||1)+'</span><b>'+money(Number(x.price)*(x.quantity||1))+'</b></div>').join('')+'</div></div>').join('')+'</div></section><section class="bg-white rounded-3xl p-5"><div class="grid md:grid-cols-2 gap-3"><input id="coName" value="'+esc(p?.full_name||'')+'" class="p-4 rounded-2xl bg-slate-50" placeholder="الاسم الكامل *"><input id="coPhone" value="'+esc(p?.phone||'')+'" class="p-4 rounded-2xl bg-slate-50" placeholder="رقم الهاتف *"><input id="coCity" value="Aden" class="p-4 rounded-2xl bg-slate-50" placeholder="المدينة"><input id="coDistrict" class="p-4 rounded-2xl bg-slate-50" placeholder="المديرية / المنطقة"><input id="coAddress" class="p-4 rounded-2xl bg-slate-50 md:col-span-2" placeholder="العنوان بالتفصيل"><select id="coPay" class="p-4 rounded-2xl bg-slate-50 md:col-span-2"><option value="manual_transfer">تحويل بنكي / دفع يدوي — بانتظار مراجعة الإدارة</option></select><textarea id="coNotes" class="p-4 rounded-2xl bg-slate-50 md:col-span-2 h-24" placeholder="ملاحظات الطلب (اختياري)"></textarea></div><div class="mt-5 bg-cream rounded-2xl p-5"><div class="flex justify-between"><span>المنتجات</span><b>'+money(t.subtotal)+'</b></div><div class="flex justify-between mt-2"><span>الشحن إلى اليمن</span><b>'+money(t.shipping)+'</b></div><div class="flex justify-between mt-2"><span>رسوم الخدمة</span><b>'+money(t.service)+'</b></div><div id="coDiscountRow" class="hidden flex justify-between mt-2 text-emerald-700"><span>الخصم</span><b id="coDiscount">-0 ر.س</b></div><div class="flex justify-between border-t mt-3 pt-3 text-xl"><span>الإجمالي التقديري</span><b id="coTotal">'+money(t.total)+'</b></div></div><div class="mt-4 flex gap-2"><input id="coCoupon" class="flex-1 p-4 rounded-2xl bg-slate-50" placeholder="رمز الخصم (اختياري)"><button onclick="validateCheckoutCoupon()" class="px-4 rounded-2xl border font-bold">تطبيق</button></div><p id="couponMsg" class="text-xs mt-2 text-slate-500"></p><button onclick="placeOrder()" class="w-full mt-5 bg-navy text-white py-4 rounded-2xl font-bold">تأكيد إنشاء الطلب</button><p id="coMsg" class="text-center text-sm mt-3 text-slate-500"></p></section></div></div></div>';
 };
+</script>
+<script>
+/* OFOQ phase 29: multiseller financial consistency + seller fulfillment controls */
+(function(){
+  window.ofoqCartFinancialTotals=function(){
+    const rows=cart||[];
+    const subtotal=rows.reduce((s,x)=>s+(Number(x.price)||0)*(Number(x.quantity)||1),0);
+    const service=rows.reduce((s,x)=>{
+      const rate=Number(x.seller?.commission_percent);
+      const pct=Number.isFinite(rate)&&rate>=0&&rate<=100?rate:Number(window.ofoqCommission||10);
+      return s+(Number(x.price)||0)*(Number(x.quantity)||1)*pct/100;
+    },0);
+    const shipping=Number(window.ofoqShippingBase||0)+Number(window.ofoqAdenDelivery||0);
+    return {subtotal,service,shipping,total:subtotal+service+shipping};
+  };
+  window.cartTotals=function(){return window.ofoqCartFinancialTotals();};
+
+  const OFOQ_prevChangeQty=window.changeQty;
+  window.changeQty=async function(id,d){
+    await ofoqCartProducts();
+    const x=cart.find(i=>i.id===id); if(!x)return;
+    const max=Math.max(0,Number(x.stock||0));
+    const next=Math.max(1,(Number(x.quantity)||1)+Number(d||0));
+    if(max>0 && next>max){toast('الكمية المتاحة لهذا المنتج: '+max);return;}
+    if(max===0){toast('هذا المنتج غير متوفر حاليًا');return;}
+    x.quantity=next;
+    localStorage.ofoqCart=JSON.stringify(cart);
+    if(typeof window.showCart==='function')await window.showCart();
+    updateCount();
+  };
+
+  const OFOQ_prevShowCart=window.showCart;
+  window.showCart=async function(){
+    try{await loadOfoqSettings();}catch(e){}
+    return OFOQ_prevShowCart();
+  };
+
+  const OFOQ_prevOpenCheckout=window.openCheckout;
+  window.openCheckout=async function(){
+    try{await loadOfoqSettings();}catch(e){}
+    return OFOQ_prevOpenCheckout();
+  };
+
+  window.ofoqSellerFulfillmentDetails=async function(orderId){
+    const {data:{user}}=await db.auth.getUser();
+    if(!user){openAuth();return;}
+    const sellerQ=await db.from('ofoq_sellers').select('id,store_name,name,commission_percent').eq('user_id',user.id).maybeSingle();
+    if(sellerQ.error||!sellerQ.data){toast(sellerQ.error?.message||'لم يتم العثور على حساب البائع');return;}
+    const seller=sellerQ.data;
+    const [fq,oq,iq]=await Promise.all([
+      db.from('ofoq_order_seller_fulfillments').select('*').eq('order_id',orderId).eq('seller_id',seller.id).maybeSingle(),
+      db.from('ofoq_orders').select('id,status,payment_status,total_sar,created_at,customer_name,customer_phone,customer_address,customer_city,customer_district,notes').eq('id',orderId).maybeSingle(),
+      db.from('ofoq_order_items').select('product_name,quantity,unit_price_sar,seller_amount_sar,platform_commission_sar').eq('order_id',orderId).eq('seller_id',seller.id)
+    ]);
+    if(oq.error||!oq.data){toast(oq.error?.message||'الطلب غير موجود');return;}
+    if(fq.error||!fq.data){toast(fq.error?.message||'لا توجد حصة لهذا المتجر في الطلب');return;}
+    const f=fq.data,o=oq.data,items=iq.data||[];
+    const sellerTotal=items.reduce((s,x)=>s+Number(x.seller_amount_sar||0),0);
+    const paid=o.payment_status==='paid';
+    const next=f.status==='pending'?'confirmed':f.status==='confirmed'?'preparing':f.status==='preparing'?'ready':null;
+    const nextLabel={confirmed:'✓ تأكيد الطلب',preparing:'بدء التجهيز',ready:'📦 تم التجهيز — جاهز للشحن'}[next];
+    document.getElementById('modal').innerHTML='<div class="fixed inset-0 z-[80] bg-black/50 flex items-center justify-center p-3"><div class="bg-white rounded-[30px] p-5 md:p-7 w-full max-w-2xl max-h-[92vh] overflow-auto"><div class="flex justify-between gap-3"><div><p class="text-gold text-xs font-bold">SELLER FULFILLMENT</p><h2 class="text-2xl font-extrabold">تجهيز حصتك من الطلب</h2><p class="text-xs text-slate-400 mt-1">طلب #'+orderId.slice(0,10).toUpperCase()+'</p></div><button onclick="openSellerDashboard()" class="w-10 h-10 rounded-xl bg-slate-50">✕</button></div><div class="mt-5 grid md:grid-cols-3 gap-3"><div class="rounded-2xl bg-cream p-4"><div class="text-xs text-slate-400">حالة الدفع</div><b class="block mt-1 '+(paid?'text-emerald-700':'text-amber-700')+'">'+(paid?'مدفوع ومؤكد':'بانتظار اعتماد الدفع')+'</b></div><div class="rounded-2xl bg-cream p-4"><div class="text-xs text-slate-400">حالة حصتك</div><b class="block mt-1">'+esc(fulfillmentLabel(f.status))+'</b></div><div class="rounded-2xl bg-cream p-4"><div class="text-xs text-slate-400">مستحقات المتجر</div><b class="block mt-1">'+money(sellerTotal)+'</b></div></div><section class="mt-5 rounded-2xl border p-4"><h3 class="font-extrabold">منتجات متجرك في هذا الطلب</h3><div class="mt-3 space-y-2">'+(items.length?items.map(x=>'<div class="flex justify-between gap-3 rounded-xl bg-slate-50 p-3 text-sm"><span>'+esc(x.product_name)+' × '+Number(x.quantity||0)+'</span><b>'+money(Number(x.seller_amount_sar||0))+'</b></div>').join(''):'<p class="text-slate-400">لا توجد منتجات.</p>')+'</div></section><section class="mt-5 rounded-2xl bg-slate-50 p-4"><h3 class="font-extrabold">بيانات العميل للتجهيز</h3><div class="text-sm text-slate-600 leading-7 mt-2">'+esc(o.customer_name||'—')+' · '+esc(o.customer_phone||'—')+'<br>'+esc(o.customer_city||'Aden')+' · '+esc(o.customer_district||'')+'<br>'+esc(o.customer_address||'—')+'</div></section>'+(!paid?'<div class="mt-5 rounded-2xl bg-amber-50 text-amber-800 p-4 text-sm font-bold">لا يمكن تأكيد أو تجهيز حصة المتجر قبل اعتماد الدفع من الإدارة.</div>':next?'<button onclick="ofoqSellerAdvanceFulfillment(\''+orderId+'\',\''+next+'\')" class="w-full mt-5 bg-navy text-white py-4 rounded-2xl font-bold">'+nextLabel+'</button>': '<div class="mt-5 rounded-2xl bg-emerald-50 text-emerald-700 p-4 text-center font-bold">تم تجهيز حصة متجرك. بانتظار اكتمال باقي البائعين لبدء النقل.</div>')+'<p class="text-xs text-slate-400 text-center mt-3">لا يرى البائعون الآخرون تفاصيل حصتك.</p></div></div>';
+  };
+
+  window.ofoqSellerAdvanceFulfillment=async function(orderId,status){
+    const {error}=await db.rpc('ofoq_seller_update_fulfillment',{p_order_id:orderId,p_status:status});
+    if(error){toast(error.message);return;}
+    toast(status==='confirmed'?'تم تأكيد الطلب':status==='preparing'?'بدأ تجهيز الطلب':'تم وضع الطلب جاهزًا للشحن');
+    await ofoqSellerFulfillmentDetails(orderId);
+  };
+
+  window.sellerOrderFulfillment=window.ofoqSellerFulfillmentDetails;
+})();
 </script>
