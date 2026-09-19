@@ -1323,3 +1323,29 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)ofoqRefres
 <script>
 (function(){function mount(){if(document.getElementById('ofoqCompareButton'))return;const h=document.querySelector('header .max-w-7xl');if(!h)return;const b=document.createElement('button');b.id='ofoqCompareButton';b.onclick=openCompare;b.className='shrink-0 bg-white/10 border border-white/20 px-3 py-2 rounded-xl text-sm font-bold';b.textContent='⇄ مقارنة';const search=h.querySelector('input');search?.parentElement?.appendChild(b)}const oldRender=window.render;window.render=async function(){const r=await oldRender();mount();return r};document.addEventListener('DOMContentLoaded',mount)})();
 </script>
+
+<script>
+(function(){
+ async function ofoqCustomerOrdersV2(){
+  const {data:{user}}=await db.auth.getUser();if(!user){openAuth();return}
+  const {data:orders,error}=await db.from('ofoq_orders').select('*').eq('customer_id',user.id).order('created_at',{ascending:false}).limit(50);
+  if(error){toast(error.message);return}
+  const ids=(orders||[]).map(o=>o.id);let items=[],ships=[];
+  if(ids.length){
+   const [ir,sr]=await Promise.all([
+    db.from('ofoq_order_items').select('*').in('order_id',ids),
+    db.from('ofoq_transport_shipments').select('order_id,carrier_name,tracking_code,estimated_days,status,status_updated_at').in('order_id',ids)
+   ]);items=ir.data||[];ships=sr.data||[];
+  }
+  const labels={pending:'بانتظار التأكيد',confirmed:'تم التأكيد',preparing:'جاري التجهيز',picked_up:'تم الاستلام من البائع',in_transit:'في الطريق إلى اليمن',arrived_aden:'وصل عدن',ready:'جاهز للتسليم',delivered:'تم التسليم',cancelled:'ملغي'};
+  const steps=['confirmed','preparing','picked_up','in_transit','arrived_aden','ready','delivered'];
+  const stepNames=['تم التأكيد','جاري التجهيز','استلام الشحنة','في الطريق إلى اليمن','وصلت عدن','جاهزة للتسليم','تم التسليم'];
+  const html=(orders||[]).map(o=>{
+   const s=ships.find(x=>x.order_id===o.id),status=s?.status||o.status,idx=steps.indexOf(status),its=items.filter(i=>i.order_id===o.id);
+   return '<article class="bg-white rounded-[28px] p-5 md:p-6 shadow-sm border border-slate-100"><div class="flex flex-wrap justify-between gap-3 items-start"><div><b class="text-lg">طلب #'+o.id.slice(0,10).toUpperCase()+'</b><div class="text-xs text-slate-400 mt-1">'+new Date(o.created_at).toLocaleString('ar-SA')+'</div></div><span class="px-3 py-2 rounded-full bg-cream text-sm font-bold">'+(labels[status]||status)+'</span></div><div class="mt-5 grid grid-cols-4 md:grid-cols-7 gap-1">'+stepNames.map((n,i)=>'<div class="text-center"><div class="mx-auto w-7 h-7 rounded-full '+(i<=(idx<0?-1:idx)?'bg-navy text-white':'bg-slate-100 text-slate-400')+' grid place-items-center text-[10px] font-bold">'+(i+1)+'</div><div class="text-[10px] text-slate-400 mt-1 leading-4">'+n+'</div></div>').join('')+'</div><div class="mt-5 space-y-2">'+its.slice(0,4).map(i=>'<div class="flex justify-between text-sm gap-3"><span class="truncate">'+esc(i.product_name||'منتج')+' × '+i.quantity+'</span><b>'+money(Number(i.unit_price_sar||0)*Number(i.quantity||0))+'</b></div>').join('')+'</div><div class="border-t mt-4 pt-4 flex flex-wrap justify-between gap-3 items-center"><div><span class="text-slate-500 text-sm">الإجمالي</span><b class="mr-2">'+money(o.total_sar)+'</b>'+(s?.estimated_days?'<span class="text-xs text-slate-400">• متوقع خلال '+s.estimated_days+' أيام</span>':'')+'</div><button onclick="customerOrderDetails(''+o.id+'')" class="bg-navy text-white px-5 py-3 rounded-2xl font-bold">تفاصيل وتتبع ←</button></div></article>'
+  }).join('');
+  document.getElementById('modal').innerHTML='<div class="fixed inset-0 z-50 bg-cream overflow-auto"><div class="max-w-5xl mx-auto p-4 md:p-8"><div class="flex justify-between items-center"><div><p class="text-gold font-bold text-sm">MY ORDERS</p><h2 class="text-3xl font-extrabold">طلباتي</h2><p class="text-slate-500 mt-1">تابع حالة طلبك من التأكيد حتى التسليم في عدن.</p></div><button onclick="document.getElementById(\'modal\').innerHTML=\'\';render()" class="bg-white px-4 py-3 rounded-2xl">إغلاق</button></div><div class="space-y-4 mt-6">'+(html||'<div class="bg-white rounded-3xl p-12 text-center text-slate-400">لا توجد طلبات بعد.</div>')+'</div></div></div>';
+ }
+ window.customerOrders=ofoqCustomerOrdersV2;
+})();
+</script>
