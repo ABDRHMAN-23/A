@@ -1428,3 +1428,26 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)ofoqRefres
  };
 })();
 </script>
+
+<script>
+/* OFOQ phase 10: dedicated logistics center access + operational overview */
+(function(){
+ const prev=window.ofoqAdminActions;
+ window.ofoqAdminActions=function(){
+  if(typeof prev==='function')prev();
+  const el=document.getElementById('ofoqAdminActions');if(!el)return;
+  const grid=el.firstElementChild;if(!grid)return;
+  if(grid.querySelector('.ofoq-logistics-center'))return;
+  const b=document.createElement('button');
+  b.className='ofoq-logistics-center p-4 rounded-2xl bg-navy text-white text-right hover:shadow-md transition';
+  b.innerHTML='<span class="text-xl">🚚</span><div class="font-bold mt-2">مركز النقل والشحن</div><div class="text-xs text-white/60 mt-1">إدارة وتتبع شحنات جدة → عدن</div>';
+  b.onclick=()=>window.openOfoqTransportCenter?.();
+  grid.appendChild(b);
+ };
+ const oldDash=window.openAdminDashboard;
+ window.openAdminDashboard=async function(){
+  await oldDash();
+  setTimeout(()=>window.ofoqAdminActions?.(),150);
+ };
+})();
+</script>
