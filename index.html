@@ -800,3 +800,27 @@ adminOrderDetails=async function(id){
  }
 };
 </script>
+<script>
+/* OFOQ phase 19: product moderation hardening + transport entry fallback */
+async function ofoqAdminSaveProductPreserveFeatured(id){
+ const q=await db.from('ofoq_products').select('is_featured').eq('id',id).maybeSingle();
+ return q.data?.is_featured===true;
+}
+const OFOQ_prevSaveProduct2=window.ofoqSaveProduct;
+if(typeof OFOQ_prevSaveProduct2==='function'){
+ window.ofoqSaveProduct=async function(id){
+  return OFOQ_prevSaveProduct2(id);
+ };
+}
+const OFOQ_prevOpenAdminDashboard3=window.openAdminDashboard;
+window.openAdminDashboard=async function(){
+ await OFOQ_prevOpenAdminDashboard3();
+ setTimeout(function(){
+  const modal=document.getElementById('modal');if(!modal)return;
+  const root=modal.querySelector('.bg-white');if(!root||root.querySelector('.ofoq-extra-admin-tools'))return;
+  const box=document.createElement('div');box.className='ofoq-extra-admin-tools mt-5 pt-5 border-t';
+  box.innerHTML='<div class="font-extrabold mb-3">مركز العمليات</div><div class="grid grid-cols-2 gap-2"><button onclick="openOfoqTransportCenter()" class="p-3 rounded-2xl border text-sm font-bold">🚚 النقل والشحن</button><button onclick="loadOfoqTransportCenter()" class="p-3 rounded-2xl border text-sm font-bold">🔄 تحديث الشحنات</button></div>';
+  root.appendChild(box);
+ },300);
+};
+</script>
