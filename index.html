@@ -925,3 +925,26 @@ window.openSellerDashboard=async function(){
  },350);
 };
 </script>
+<script>
+/* OFOQ phase 24: multi-image seller product uploader */
+window.ofoqSellerUploadImages=async function(sellerId,input,callback){
+ const files=[...(input?.files||[])];if(!files.length)return callback?.([]);
+ const good=files.filter(f=>f.type.startsWith('image/')&&f.size<=5*1024*1024).slice(0,8);
+ if(!good.length){toast('اختر صورًا أقل من 5MB');return}
+ const urls=[];
+ for(const f of good){
+  const ext=(f.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg';
+  const path=sellerId+'/'+crypto.randomUUID()+'.'+ext;
+  const up=await db.storage.from('ofoq-products').upload(path,f,{upsert:false,contentType:f.type});
+  if(up.error){toast(up.error.message);continue}
+  const pub=db.storage.from('ofoq-products').getPublicUrl(path);
+  if(pub.data?.publicUrl)urls.push(pub.data.publicUrl);
+ }
+ callback?.(urls);
+};
+window.ofoqEnhanceSellerProductForm=function(){
+ const input=document.getElementById('spImage');
+ if(input){input.multiple=true;input.accept='image/jpeg,image/png,image/webp';input.title='يمكنك اختيار حتى 8 صور، كل صورة 5MB كحد أقصى';}
+};
+setTimeout(ofoqEnhanceSellerProductForm,500);
+</script>
